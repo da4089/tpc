@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 	    /* --quiet or -q */
 	    case 'q':
 	    {
-		fclose(stderr);
+		close(STDERR_FILENO);
 		break;
 	    }
 
