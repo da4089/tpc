@@ -15,15 +15,45 @@ static void *Accept()
     return NULL;
 }
 
+static void *CreateDisjunction()
+{
+    printf("<disjunction> ::= <xor-exp>\n");
+    return NULL;
+}
+
+static void *CreateXorExp()
+{
+    printf("<xor-exp> ::= <conjunction>\n");
+    return NULL;
+}
+
+static void *CreateConjunction()
+{
+    printf("<conjunction> ::= <bool-exp>\n");
+    return NULL;
+}
+
+static void *BoolExpFromBoolFunction()
+{
+    printf("<bool-exp> ::= <bool-function>\n");
+    return NULL;
+}
+
 static void *NameFromId()
 {
-    printf("NameFromId\n");
+    printf("<name> ::= ID\n");
+    return NULL;
+}
+
+static void *CreateExistsFunction()
+{
+    printf("<bool-function> ::= EXISTS LPAREN <name> RPAREN\n");
     return NULL;
 }
 
 static void *CreateInt32Function()
 {
-    printf("CreateInt32Function\n");
+    printf("<bool-function> ::= IS_INT32 LPAREN <name> RPAREN\n");
     return NULL;
 }
 
@@ -31,6 +61,13 @@ static void *Function()
 {
     return NULL;
 }
+
+static void *CreateNestedBoolExp()
+{
+    printf("<bool-exp> ::= LPAREN <disjunction> RPAREN\n");
+    return NULL;
+}
+
 
 #include "e4new.h"
 
@@ -111,14 +148,16 @@ int main(int argc, char *argv[])
     *state_top = 0;
     printf("hello sailor\n");
 
-    ShiftReduce(TT_IS_INT32, NULL);
+    ShiftReduce(TT_LPAREN, NULL);
+    ShiftReduce(TT_LPAREN, NULL);
+    ShiftReduce(TT_PRIMARY, NULL);
     ShiftReduce(TT_LPAREN, NULL);
     ShiftReduce(TT_ID, NULL);
     ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_BOOL_AND, NULL);
-    ShiftReduce(TT_ID, NULL);
+    ShiftReduce(TT_RPAREN, NULL);
+    ShiftReduce(TT_RPAREN, NULL);
     ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_INT32, NULL);
+    ShiftReduce(TT_STRING, NULL);
     ShiftReduce(TT_EOF, NULL);
     return 0;
 }
