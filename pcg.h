@@ -40,10 +40,10 @@ static struct production productions[11] =
     { make_production, 2, 4 },
 
     /* 4: <exp-list> ::= <exp-list> <nonterminal> */
-    { add_component, 4, 2 },
+    { extend_exp_list, 4, 2 },
 
     /* 5: <exp-list> ::= <exp-list> <terminal> */
-    { add_component, 4, 2 },
+    { extend_exp_list, 4, 2 },
 
     /* 6: <exp-list> ::= <nonterminal> */
     { make_exp_list, 4, 1 },
