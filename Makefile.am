@@ -1,16 +1,11 @@
-bin_PROGRAMS = pc
+bin_PROGRAMS = go
 
-pc_SOURCES = \
-	grammar.h Grammar.h Grammar.c \
-	Kernel.h Kernel.c \
-	Production.h Production.c \
-	Component.h Component.c \
-	Terminal.h Terminal.c \
-	Nonterminal.h Nonterminal.c \
-	Lexer.h Lexer.c \
-	Parser.h Parser.c \
-	StringBuffer.h StringBuffer.c \
-	Hash.h Hash.c \
-	List.h List.c \
-	getopt.h getopt.c getopt1.c \
-	main.c
+go_SOURCES = \
+	pcg.h \
+	grammar.h grammar.c \
+	component.h component.c \
+	production.h production.c \
+	parser.h parser.c
+
+pcg.h: grammar.pcg
+	@PC@ < $< > $@ 2> /dev/null
