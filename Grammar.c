@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.13 1999/02/11 07:56:36 phelps Exp $ */
+/* $Id: Grammar.c,v 1.14 1999/02/12 05:38:37 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -452,8 +452,9 @@ Kernel Grammar_resolveKernel(Grammar self, Kernel kernel)
 }
 
 /* Transforms a table of Kernels into the "actual" kernels of the receiver */
-void Grammar_resolveKernels(Grammar self, int count, Kernel *kernels)
+void Grammar_resolveKernels(Grammar self, Kernel *kernels)
 {
+    int count = self -> nonterminal_count + self -> terminal_count;
     int index;
 
     for (index = 0; index < count; index++)
@@ -491,6 +492,13 @@ Kernel Grammar_getKernel(Grammar self, int index)
 {
     return self -> kernels[index];
 }
+
+/* Answers the Productions which are derived from a pair */
+List Grammar_getDerivedProductions(Grammar self, Nonterminal nonterminal)
+{
+    return self -> productionsByNonterminal[Nonterminal_getIndex(nonterminal)];
+}
+
 
 
 /* Updates the follows table to indicate that component may
@@ -588,13 +596,17 @@ void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table)
 /* Computes the set of LALR(0) states */
 void Grammar_getLALRStates(Grammar self)
 {
+    int index;
     int isDone = 0;
 
     /* Compute the LR0 kernels */
     ComputeLR0Kernels(self);
 
-    /* Mark the initial follows information for production 0 in kernel 0 */
-/*    Kernel_markEOF(self -> kernels[0]);*/
+    /* Prepare the kernels for computation of follows information */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_propagatePrepare(self -> kernels[index]);
+    }
 
     /* Keep propagating the follows information until it stops changing */
     while (! isDone)

@@ -1,4 +1,4 @@
-/* $Id: Grammar.h,v 1.8 1999/02/11 07:44:51 phelps Exp $
+/* $Id: Grammar.h,v 1.9 1999/02/12 05:38:37 phelps Exp $
  *
  * A Grammar is a collection of Productions which, together with a
  * starting non-terminal, construe a language.  The Grammar can be
@@ -57,13 +57,16 @@ int Grammar_decode(Grammar self, int number, Production *production_return);
 void Grammar_computeGoto(Grammar self, List *table, int number);
 
 /* Transforms a table of Kernels into the "actual" kernels of the receiver */
-void Grammar_resolveKernels(Grammar self, int count, Kernel *kernels);
+void Grammar_resolveKernels(Grammar self, Kernel *kernels);
 
 /* Answers the index of the Kernel in the receiver */
 int Grammar_kernelIndex(Grammar self, Kernel kernel);
 
 /* Answers the Kernel corresponding to the given index */
 Kernel Grammar_getKernel(Grammar self, int index);
+
+/* Answers the Productions which are derived from a Nonterminal */
+List Grammar_getDerivedProductions(Grammar self, Nonterminal nonterminal);
 
 /* Updates the follows table to indicate that component may
  * be followed by the follows Component.  If follows is NULL, then the 
