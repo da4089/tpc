@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.19 1999/02/15 08:03:16 phelps Exp $ */
+/* $Id: Grammar.c,v 1.20 1999/02/15 13:36:45 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -538,6 +538,19 @@ void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table)
 
 
 
+/* Print out the kernels */
+void Grammar_printKernels(Grammar self, FILE *out)
+{
+    int index;
+
+    /* Compute the LALR states */
+    ComputeLALRStates(self);
+
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_debug(self -> kernels[index], out);
+    }
+}
 
 /* Print out a parse table */
 void Grammar_printTable(Grammar self, FILE *out)
