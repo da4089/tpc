@@ -27,8 +27,11 @@
 
 ****************************************************************/
 
+#ifndef PARSER_H
+#define PARSER_H
+
 #ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.1 1999/12/11 14:41:24 phelps Exp $";
+static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.2 1999/12/11 16:15:14 phelps Exp $";
 #endif /* lint */
 
 /* The parser type */
@@ -46,3 +49,4 @@ void parser_free(parser_t self);
 /* Parses the characters in buffer */
 int parser_parse(parser_t self, unsigned char *buffer, size_t length);
 
+#endif /* PARSER_H */
