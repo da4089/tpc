@@ -1,0 +1,59 @@
+.TH TPC "1999 December 21"
+.ds tp \fItpc\fP
+.ds Tp \fITpc\fP
+.UC 4
+.SH NAME
+tpc \- Ted's parser compiler
+.SH SYNOPSIS
+.nf
+tpc [-o file] [--ouput=file]
+    [-d] [--debug]
+    [-q] [--quiet]
+    [-v] [--version]
+    [-h] [--help]
+.fi
+.SH OPTIONS
+\*(Tp may be invoked with the following command-line options:
+.TP
+.B -o \fIfile\fP
+.TP
+.BI --output= file
+Write the parser tables into the named file instead of stdout.
+.TP
+.B -d
+.TP
+.B --debug
+Print the parser table to stderr in a somewhat human-readable form.
+.TP
+.B -q
+.TP
+.B --quiet
+Supress any warnings or error messages.
+.TP
+.B -v
+.TP
+.B --version
+Print out the version of \*(tp that is being run and exit.
+.TP
+.B -h
+.TP
+.B --help
+Print a usage message briefly summarizing these command-line options.
+.SH DESCRIPTION
+\*(Tp is yet another tool for generating LALR(1) parsers.  Unlike yacc 
+and bison, \*(tp does not generate a parser.  Instead, it generates
+the tables that a parser uses to decide when to shift and how to
+reduce the tokens that it is given.  This makes it possible to build
+reentrant parsers, which was why it was written in the first place.
+.PP
+As any good parser compiler should, \*(tp uses itself to generate its
+parse tables.  Until more complete documentation is written, the best
+example of how to use it is the code itself.  The grammar is defined
+in grammar.pcg, and the parser is in parser.c.
+.SH BUGS
+E-mail bug reports to
+.BR phelps@pobox.com .
+Be sure to include the word "tpc" somewhere in the "Subject:" field.
+.SH AUTHORS
+\*(Tp was written by Ted Phelps <phelps@pobox.com> to aid in the
+construction of the parser for the Elvin-4 subscription language.
