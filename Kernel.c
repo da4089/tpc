@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.11 1999/02/12 07:46:22 phelps Exp $ */
+/* $Id: Kernel.c,v 1.12 1999/02/12 08:10:40 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -562,8 +562,8 @@ int Kernel_addFollowsTerminal(Kernel self, int pair, Terminal terminal)
     /* Make sure we have a follows set */
     if (self -> follows == NULL)
     {
-	self -> follows = calloc(
-	    self -> count * Grammar_nonterminalCount(self -> grammar), sizeof(char));
+	self -> follows = (char *)calloc(
+	    self -> count * Grammar_terminalCount(self -> grammar), sizeof(char));
     }
 
     /* Get the index of the pair */
