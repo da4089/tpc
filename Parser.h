@@ -1,4 +1,4 @@
-/* $Id: Parser.h,v 1.1 1999/02/08 09:23:54 phelps Exp $
+/* $Id: Parser.h,v 1.2 1999/02/16 09:32:43 phelps Exp $
  *
  * An "upside-down" parser for incremental parsing from stdin
  */
@@ -31,7 +31,7 @@ void Parser_acceptNonterminal(Parser self, char *value);
 void Parser_acceptTerminal(Parser self, char *value);
 
 /* Updates the receiver's state based on the next stop token */
-void Parser_acceptStop(Parser self);
+void Parser_acceptFunction(Parser self, char *value);
 
 /* Updates the receiver's state based on the end of input */
 void Parser_acceptEOF(Parser self);
