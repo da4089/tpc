@@ -1,0 +1,91 @@
+<sub-exp> ::= <or-exp-list> .
+
+<or-exp-list> ::= <or-exp-list> bool-or <xor-exp-list> .
+<or-exp-list> ::= <xor-exp-list> .
+
+<xor-exp-list> ::= <xor-exp-list> bool-xor <and-exp-list> .
+<xor-exp-list> ::= <and-exp-list> .
+
+<and-exp-list> ::= <and-exp-list> bool-and <bool-exp> .
+<and-exp-list> ::= <bool-exp> .
+
+<bool-exp> ::= <value> <predicate> <value> .
+<bool-exp> ::= <function-name> lparen rparen .
+<bool-exp> ::= <function-name> lparen <arg-list> rparen .
+<bool-exp> ::= lparen <or-exp-list> rparen .
+<bool-exp> ::= bang <bool-exp> .
+
+<value> ::= string .
+<value> ::= <bit-or-exp-list> .
+
+<predicate> ::= eq .
+<predicate> ::= neq .
+<predicate> ::= lt .
+<predicate> ::= gt .
+<predicate> ::= le .
+<predicate> ::= ge .
+
+<function-name> ::= id .
+
+<arg-list> ::= <arg-list> comma <value> .
+<arg-list> ::= <value> .
+
+<bit-or-exp-list> ::= <bit-or-exp-list> bit-or <bit-xor-exp-list> .
+<bit-or-exp-list> ::= <bit-xor-exp-list> .
+
+<bit-xor-exp-list> ::= <bit-xor-exp-list> bit-xor <bit-and-exp-list> .
+<bit-xor-exp-list> ::= <bit-and-exp-list> .
+
+<bit-and-exp-list> ::= <bit-and-exp-list> bit-and <bit-shift-exp-list> .
+<bit-and-exp-list> ::= <bit-shift-exp-list> .
+
+<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shl <difference-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shr <difference-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-lsr <difference-list> .
+<bit-shift-exp-list> ::= <difference-list> .
+
+<difference-list> ::= <difference-list> minus <sum-list> .
+<difference-list> ::= <sum-list> .
+
+<sum-list> ::= <sum-list> plus <modulo-list> .
+<sum-list> ::= <modulo-list> .
+
+<modulo-list> ::= <modulo-list> mod <product-list> .
+<modulo-list> ::= <product-list> .
+
+<product-list> ::= <product-list> times <num-exp> .
+<product-list> ::= <product-list> div <num-exp> .
+<product-list> ::= <num-exp> .
+
+<num-exp> ::= <num-value> .
+<num-exp> ::= minus <num-value> .
+<num-exp> ::= neg <num-value> .
+
+<num-value> ::= int32 .
+<num-value> ::= int64 .
+<num-value> ::= real64 .
+<num-value> ::= <name> .
+<num-value> ::= <function-name> lparen rparen .
+<num-value> ::= <function-name> lparen <arg-list> rparen .
+<num-value> ::= lparen <bit-or-exp-list> rparen .
+
+<name> ::= id .
+<name> ::= eq .
+<name> ::= neq .
+<name> ::= lt .
+<name> ::= gt .
+<name> ::= ge .
+<name> ::= le .
+<name> ::= bool-or .
+<name> ::= bool-xor .
+<name> ::= bool-and .
+<name> ::= bit-or .
+<name> ::= bit-xor .
+<name> ::= bit-and .
+<name> ::= bit-shl .
+<name> ::= bit-shr .
+<name> ::= bit-lsr .
+<name> ::= plus .
+<name> ::= mod .
+<name> ::= times .
+<name> ::= div .
