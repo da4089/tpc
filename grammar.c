@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.15 1999/12/20 15:04:54 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.16 1999/12/20 15:27:32 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1020,6 +1020,69 @@ int grammar_get_component_count(grammar_t self)
 }
 
 
+/* Prints a single kernel */
+void print_kernel(grammar_t self, int index, FILE *out)
+{
+    kernel_t kernel = self -> kernels[index];
+    int i;
+
+    fprintf(out, "Kernel %d\n", index);
+    for (i = 0; i < kernel -> count; i++)
+    {
+	int first = 1;
+	int pi;
+	int j;
+
+	int offset = decode(self, kernel -> pairs[i], &pi);
+	fprintf(out, " %d: ", i);
+	production_print_with_offset(self -> productions[pi], out, offset);
+
+	for (j = 0; j < self -> terminal_count; j++)
+	{
+	    if (kernel -> follows_table[i][j])
+	    {
+		if (first)
+		{
+		    fprintf(out, ", ");
+		    first = 0;
+		}
+		else
+		{
+		    fprintf(out, "/ ");
+		}
+
+		component_print(self -> terminals[j], out);
+	    }
+	}
+
+	fprintf(out, "\n");
+    }
+
+    /* Print out the goto table's nonterminals */
+    for (i = 0; i < self -> nonterminal_count; i++)
+    {
+	if (! (kernel -> goto_table[i] < 0))
+	{
+	    fprintf(out, "    ");
+	    component_print(self -> nonterminals[i], out);
+	    fprintf(out, ": %d\n", kernel -> goto_table[i]);
+	}
+    }
+
+    /* Print out the goto table's terminals */
+    for (i = 0; i < self -> terminal_count; i++)
+    {
+	if (! (kernel -> goto_table[i + self -> nonterminal_count] < 0))
+	{
+	    fprintf(out, "    ");
+	    component_print(self -> terminals[i], out);
+	    fprintf(out, ": %d\n", kernel -> goto_table[i + self -> nonterminal_count]);
+	}
+    }
+
+    fprintf(out, "\n");
+}
+
 /* Print out the kernels */
 void grammar_print_kernels(grammar_t self, FILE *out)
 {
@@ -1027,68 +1090,7 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 
     for (index = 0; index < self -> kernel_count; index++)
     {
-	kernel_t kernel = self -> kernels[index];
-	int count = kernel -> count;
-	int *pairs = kernel -> pairs;
-	int j;
-
-	/* Print out the productions */
-	fprintf(out, "Kernel %d\n", index);
-	for (j = 0; j < count; j++)
-	{
-	    int first = 1;
-	    int pi;
-	    int k;
-
-	    int offset = decode(self, pairs[j], &pi);
-	    fprintf(out, "  %d: ", j);
-	    production_print_with_offset(self -> productions[pi], out, offset);
-
-	    fprintf(out, ", ");
-
-	    for (k = 0; k < self -> terminal_count; k++)
-	    {
-		if (kernel -> follows_table[j][k])
-		{
-		    if (first)
-		    {
-			first = 0;
-		    }
-		    else
-		    {
-			fprintf(out, "/ ");
-		    }
-
-		    component_print(self -> terminals[k], out);
-		}
-	    }
-
-	    fprintf(out, "\n");
-	}
-
-	/* Print out the goto table (nonterminals) */
-	for (j = 0; j < self -> nonterminal_count; j++)
-	{
-	    if (! (kernel -> goto_table[j] < 0))
-	    {
-		fprintf(out, "    ");
-		component_print(self -> nonterminals[j], out);
-		fprintf(out, ": %d\n", kernel -> goto_table[j]);
-	    }
-	}
-
-	/* Print out the goto table (terminals) */
-	for (j = 0; j < self -> terminal_count; j++)
-	{
-	    if (! (kernel -> goto_table[self -> nonterminal_count + j] < 0))
-	    {
-		fprintf(out, "    ");
-		component_print(self -> terminals[j], out);
-		fprintf(out, ": %d\n", kernel -> goto_table[self -> nonterminal_count + j]);
-	    }
-	}
-
-	fprintf(out, "\n");
+	print_kernel(self, index, out);
     }
 }
 
@@ -1168,6 +1170,28 @@ static void print_reduction_table(grammar_t self, FILE *out)
     fprintf(out, "\n};\n\n");
 }
 
+/* Returns the index of the first production in the kernel to be
+ * listed in the input file */
+static int first_production_index(grammar_t self, kernel_t kernel)
+{
+    int index;
+    int result = self -> production_count;
+
+    /* Go through the pairs and find the first listed production */
+    for (index = 0; index < kernel -> count; index++)
+    {
+	int test;
+
+	decode(self, kernel -> pairs[index], &test);
+	if (test < result)
+	{
+	    result = test;
+	}
+    }
+
+    return result;
+}
+
 /* Prints out the contribution of a kernel to the SR table */
 static void print_kernel_SR_entry(grammar_t self, kernel_t kernel, FILE *out)
 {
@@ -1202,8 +1226,7 @@ static void print_kernel_SR_entry(grammar_t self, kernel_t kernel, FILE *out)
 			component_print(self -> terminals[i], stderr);
 			fprintf(stderr, "in kernel %d\n", index);
 			fprintf(stderr, "  [using first listed reduction]\n");
-			/*print_kernel(self, index);*/
-			abort();
+			print_kernel(self, index, stderr);
 		    }
 		    else
 		    {
@@ -1236,13 +1259,29 @@ static void print_kernel_SR_entry(grammar_t self, kernel_t kernel, FILE *out)
 	    /* Report shift/reduce conflicts */
 	    if (reduction != -1)
 	    {
+		int si;
+
 		fprintf(stderr, "*** Warning: shift/reduce conflict on ");
 		component_print(self -> terminals[index], stderr);
 		fprintf(stderr, "in kernel %d\n", ki);
 
 		/* Resolve the conflict according to the order of the
-		 * productions in the grammar */
-		abort();
+		 * productions in the grammar.  Figure out which
+		 * production generated the shift operation */
+		si = first_production_index(self, self -> kernels[shift]);
+		if (reduction < si)
+		{
+		    fprintf(out, "R(%d)", reduction);
+		    fprintf(stderr, "    [choosing to reduce]\n");
+		}
+		else
+		{
+		    fprintf(out, "S(%d)", shift);
+		    fprintf(stderr, "    [choosing to shift]\n");
+		}
+
+		/* Print the kernel for reference */
+		print_kernel(self, ki, stderr);
 	    }
 	    else
 	    {
