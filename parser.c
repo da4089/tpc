@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.7 1999/12/13 02:24:56 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.8 1999/12/13 03:59:17 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -47,7 +47,7 @@ static void *accept_grammar(parser_t self);
 static void *extend_production_list(parser_t self);
 static void *make_production_list(parser_t self);
 static void *make_production(parser_t self);
-static void *add_component(parser_t self);
+static void *extend_exp_list(parser_t self);
 static void *make_exp_list(parser_t self);
 static void *make_nonterminal(parser_t self);
 static void *make_terminal(parser_t self);
@@ -112,6 +112,18 @@ struct parser
 
     /* The nonterminal symbols */
     component_t *nonterminals;
+
+    /* The number of components in the current production */
+    int component_count;
+
+    /* The components of the current production */
+    component_t *components;
+
+    /* The number of productions */
+    int production_count;
+
+    /* The productions */
+    production_t *productions;
 };
 
 
@@ -243,7 +255,11 @@ static int shift_reduce(parser_t self, terminal_t type, void *value)
 	pop(self, 1);
 
 	/* Finish parsing */
-	result = accept_grammar(self);
+	if ((result = accept_grammar(self)) == NULL)
+	{
+	    return -1;
+	}
+
 	if (self -> callback != NULL)
 	{
 	    self -> callback(self -> rock, result);
@@ -599,92 +615,90 @@ static component_t intern_nonterminal(parser_t self, char *name)
     return component;
 }
 
+/* Adds a component to the production */
+static void add_component(parser_t self, component_t component)
+{
+    self -> components = (component_t *)realloc(
+	self -> components, (self -> component_count + 1) * sizeof(component_t));
+    self -> components[self -> component_count++] = component;
+}
+
+/* Adds a production to the list */
+static void add_production(parser_t self, production_t production)
+{
+    self -> productions = (production_t *)realloc(
+	self -> productions, (self -> production_count + 1) * sizeof(production_t));
+    self -> productions[self -> production_count++] = production;
+}
+
 
 /* <grammar> ::= <production-list> */
 static void *accept_grammar(parser_t self)
 {
-    grammar_t grammar = (grammar_t)self -> value_top[0];
+    grammar_t grammar;
 
-    /* Finalize construction of the grammar */
-    grammar_set_components(
-	grammar,
-	self -> terminal_count,
-	self -> terminals,
-	self -> nonterminal_count,
-	self -> nonterminals);
+    if ((grammar = grammar_alloc(
+	self -> production_count, self -> productions,
+	self -> terminal_count, self -> terminals,
+	self -> nonterminal_count, self -> nonterminals)) == NULL)
+    {
+	return NULL;
+    }
 
-    /* Null out the terminals and nonterminals so that we don't accidentally free them */
+    /* Clear our fields so that we can safely be freed */
     self -> terminals = NULL;
     self -> nonterminals = NULL;
+    self -> productions = NULL;
     return grammar;
 }
 
 /* <production-list> ::= <production-list> <production> */
 static void *extend_production_list(parser_t self)
 {
-    grammar_t grammar = (grammar_t)self -> value_top[0];
-    production_t production = (production_t)self -> value_top[1];
-
-    grammar_add_production(grammar, production);
-    return grammar;
+    add_production(self, (production_t)self -> value_top[1]);
+    return self -> productions;
 }
 
 /* <production-list> ::= <production> */
 static void *make_production_list(parser_t self)
 {
-    grammar_t grammar;
-    production_t production;
-
-    /* Allocate a grammar_t to hold the productions */
-    if ((grammar = grammar_alloc()) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Add the production to it */
-    production = (production_t)self -> value_top[0];
-    grammar_add_production(grammar, production);
-    return grammar;
+    production_t production = (production_t)self -> value_top[0];
+    add_production(self, production);
+/*    production_set_index(production, index);*/
+    return self -> productions;
 }
 
 /* <production> ::= <nonterminal> DERIVES <exp-list> <function> */
 static void *make_production(parser_t self)
 {
-    component_t component = (component_t)self -> value_top[0];
-    production_t production = (production_t)self -> value_top[2];
-    char *function = (char *)self -> value_top[3];
+    production_t production;
 
-    production_set_nonterminal(production, component);
-    production_set_function(production, function);
+    production = production_alloc(
+	self -> production_count,
+	(component_t)self -> value_top[0],
+	self -> component_count,
+	self -> components,
+	(char *)self -> value_top[4]);
+
+    self -> component_count = 0;
+    self -> components = NULL;
     return production;
 }
 
 /* <exp-list> ::= <exp-list> <nonterminal> */
 /* <exp-list> ::= <exp-list> <terminal> */
-static void *add_component(parser_t self)
+static void *extend_exp_list(parser_t self)
 {
-    production_t production = (production_t)self -> value_top[0];
-    component_t component = (component_t)self -> value_top[1];
-
-    production_add_component(production, component);
-    return production;
+    add_component(self, (component_t)self -> value_top[1]);
+    return self -> components;
 }
 
 /* <exp-list> ::= <nonterminal> */
 /* <exp-list> ::= <terminal> */
 static void *make_exp_list(parser_t self)
 {
-    production_t production;
-    component_t component;
-
-    if ((production = production_alloc(37)) == NULL)
-    {
-	return NULL;
-    }
-
-    component = self -> value_top[0];
-    production_add_component(production, component);
-    return production;
+    add_component(self, (component_t)self -> value_top[0]);
+    return self -> components;
 }
 
 /* <nonterminal> ::= LT ID GT */
@@ -742,6 +756,12 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
     self -> token = NULL;
     self -> token_end = NULL;
     self -> point = NULL;
+    self -> terminal_count = 0;
+    self -> terminals = NULL;
+    self -> nonterminal_count = 0;
+    self -> nonterminals = NULL;
+    self -> production_count = 0;
+    self -> productions = NULL;
 
     /* Allocate some space for the state stack */
     if ((self -> state_stack = (int *)calloc(INITIAL_STACK_SIZE, sizeof(int))) == NULL)
@@ -821,6 +841,16 @@ void parser_free(parser_t self)
 	}
 
 	free(self -> nonterminals);
+    }
+
+    if (self -> productions != NULL)
+    {
+	for (index = 0; index < self -> production_count; index++)
+	{
+	    production_free(self -> productions[index]);
+	}
+
+	free(self -> productions);
     }
 
     free(self);

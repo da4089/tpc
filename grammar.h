@@ -31,7 +31,7 @@
 #define GRAMMAR_H
 
 #ifndef lint
-static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.12 1999/12/13 02:24:32 phelps Exp $";
+static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.13 1999/12/13 03:58:58 phelps Exp $";
 #endif /* lint */
 
 /* The grammar type */
@@ -39,21 +39,14 @@ typedef struct grammar *grammar_t;
 
 
 /* Allocates and initializes a new nonterminal grammar_t */
-grammar_t grammar_alloc();
+grammar_t grammar_alloc(
+    int production_count, production_t *productions,
+    int terminal_count, component_t *terminals,
+    int nonterminal_count, component_t *nonterminals);
 
 /* Releases the resources consumed by the receiver */
 void grammar_free(grammar_t self);
 
-/* Adds another production to the grammar */
-void grammar_add_production(grammar_t self, production_t production);
-
-/* Sets the grammar's set of terminals */
-void grammar_set_components(
-    grammar_t self,
-    int terminal_count,
-    component_t *terminals,
-    int nonterminal_count,
-    component_t *nonterminals);
 
 /* Returns the number of components in the grammar */
 int grammar_get_component_count(grammar_t self);
