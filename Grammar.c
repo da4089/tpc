@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.12 1999/02/11 07:44:50 phelps Exp $ */
+/* $Id: Grammar.c,v 1.13 1999/02/11 07:56:36 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -428,6 +428,14 @@ Kernel Grammar_resolveKernel(Grammar self, Kernel kernel)
 	return NULL;
     }
 
+    /* If the kernel is the official one, then simply return it */
+    index = Kernel_getIndex(kernel);
+    if (index != 0)
+    {
+	return kernel;
+    }
+
+    /* Try to find it in the kernel table */
     for (index = 0; index < self -> kernel_count; index++)
     {
 	if (Kernel_equals(kernel, self -> kernels[index]))
@@ -437,6 +445,7 @@ Kernel Grammar_resolveKernel(Grammar self, Kernel kernel)
 	}
     }
 
+    /* If we get here, then something has gone wrong... */
     printf("uh oh...\n");
     Kernel_debug(kernel, stdout);
     exit(1);
