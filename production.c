@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.6 1999/12/20 07:35:12 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.7 1999/12/20 15:06:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -164,4 +164,13 @@ void production_print_with_offset(production_t self, FILE *out, int offset)
     {
 	fprintf(out, "* ");
     }
+}
+
+/* Prints the production as a struct */
+void production_print_struct(production_t self, FILE *out)
+{
+    fprintf(out, "    { %s, %d, %d }",
+	    self -> function,
+	    component_get_index(self -> nonterminal),
+	    self -> count);
 }
