@@ -1,4 +1,4 @@
-/* $Id: Lexer.c,v 1.6 1999/02/16 09:32:10 phelps Exp $ */
+/* $Id: Lexer.c,v 1.7 1999/02/19 10:31:32 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +58,13 @@ static void StartToken(Lexer self, int ch)
 	{
 	    StringBuffer_clear(self -> buffer);
 	    self -> state = 8;
+	    return;
+	}
+
+	/* Start of a comment */
+	case '#':
+	{
+	    self -> state = 11;
 	    return;
 	}
     }
@@ -217,6 +224,21 @@ static void AcceptFunction(Lexer self, int ch)
     Lexer_acceptChar(self, ch);
 }
 
+static void ReadComment(Lexer self, int ch)
+{
+    /* Watch for end-of-line/end-of-file */
+    if ((ch == '\n') || (ch == EOF))
+    {
+	self -> state = 0;
+	Lexer_acceptChar(self, ch);
+	return;
+    }
+
+    /* Ignore comments */
+    self -> state = 11;
+    return;
+}
+
 
 /*
  *
@@ -335,5 +357,11 @@ void Lexer_acceptChar(Lexer self, int ch)
 	    return;
 	}
 
+	/* Reading a comment */
+	case 11:
+	{
+	    ReadComment(self, ch);
+	    return;
+	}
     }
 }
