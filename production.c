@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.10 2000/03/15 05:42:15 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.11 2002/04/11 21:44:07 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -84,26 +84,9 @@ production_t production_alloc(
 /* Releases the resources consumed by the receiver */
 void production_free(production_t self)
 {
-    int index;
-
-    if (self -> nonterminal != NULL)
-    {
-	component_free(self -> nonterminal);
-    }
-
     if (self -> components != NULL)
     {
-	for (index = 0; index < self -> count; index++)
-	{
-	    component_free(self -> components[index]);
-	}
-
 	free(self -> components);
-    }
-
-    if (self -> reduction != NULL)
-    {
-	free(self -> reduction);
     }
 
     free(self);
