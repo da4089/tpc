@@ -1,0 +1,17 @@
+Overview of changes in tpc-0.5.1
+
+* Added various files that make a distribution complete, including
+  README, AUTHORS and a man page.
+
+* Error messages now attempt to be more helpful about explaining what
+  went wrong (better than state=x, type=y).
+
+* Lots of tweaks suggested by various compilers.
+
+* Implemented the `-o' and `-q' command-line options to specify an
+  output file and turn off warnings and error messages.
+
+Overview of changes in tpc-0.5
+
+* Major rewrite and name reform.  The code in grammar.c is still
+  confusing but hopefully less so than it was before.
