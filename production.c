@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.3 1999/12/13 02:25:25 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.4 1999/12/13 03:59:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -55,8 +55,13 @@ struct production
     char *function;
 };
 
-/* Allocates and initializes a new empty production_t */
-production_t production_alloc(int index)
+/* Allocates and initializes a new production_t */
+production_t production_alloc(
+    int index,
+    component_t nonterminal,
+    int component_count,
+    component_t *components,
+    char *function)
 {
     production_t self;
 
@@ -68,10 +73,10 @@ production_t production_alloc(int index)
 
     /* Initialize its contents to sane values */
     self -> index = index;
-    self -> nonterminal = NULL;
-    self -> count = 0;
-    self -> components = NULL;
-    self -> function = NULL;
+    self -> nonterminal = nonterminal;
+    self -> count = component_count;
+    self -> components = components;
+    self -> function = function;
     return self;
 }
 
@@ -101,26 +106,6 @@ void production_free(production_t self)
     }
 
     free(self);
-}
-
-/* Sets the receiver's nonterminal */
-void production_set_nonterminal(production_t self, component_t nonterminal)
-{
-    self -> nonterminal = nonterminal;
-}
-
-/* Adds another component to the end of the production's list */
-void production_add_component(production_t self, component_t component)
-{
-    self -> components = (component_t *)realloc(
-	self -> components, (self -> count + 1) * sizeof(component_t));
-    self -> components[self -> count++] = component;
-}
-
-/* Sets the receiver's function */
-void production_set_function(production_t self, char *function)
-{
-    self -> function = strdup(function);
 }
 
 /* Returns the production's index */
@@ -179,4 +164,7 @@ void production_print_with_offset(production_t self, FILE *out, int offset)
     {
 	fprintf(out, "* ");
     }
+
+    /* Print the production index */
+    printf("[%d: %s]", self -> index, self -> function);
 }

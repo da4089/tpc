@@ -31,26 +31,22 @@
 #define PRODUCTION_H
 
 #ifndef lint
-static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.2 1999/12/13 02:25:26 phelps Exp $";
+static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.3 1999/12/13 03:59:54 phelps Exp $";
 #endif /* lint */
 
 /* The production type */
 typedef struct production *production_t;
 
-/* Allocates and initializes a new empty production_t */
-production_t production_alloc(int index);
+/* Allocates and initializes a new production_t */
+production_t production_alloc(
+    int index,
+    component_t nonterminal,
+    int component_count,
+    component_t *components,
+    char *function);
 
 /* Releases the resources consumed by the receiver */
 void production_free(production_t self);
-
-/* Sets the receiver's nonterminal */
-void production_set_nonterminal(production_t self, component_t nonterminal);
-
-/* Adds another component to the end of the production's list */
-void production_add_component(production_t self, component_t component);
-
-/* Sets the receiver's function */
-void production_set_function(production_t self, char *function);
 
 
 /* Returns the production's left-hand side */
