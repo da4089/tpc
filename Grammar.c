@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.14 1999/02/12 05:38:37 phelps Exp $ */
+/* $Id: Grammar.c,v 1.15 1999/02/12 07:17:32 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -257,15 +257,9 @@ static void PropagateFollows(Grammar self, int *isDone)
     int index;
     *isDone = 1;
 
-    /* Go through each Kernel item and propagate its follows information */
     for (index = 0; index < self -> kernel_count; index++)
     {
 	Kernel_propagateFollows(self -> kernels[index], isDone);
-    }
-
-    for (index = 0; index < self -> kernel_count; index++)
-    {
-	Kernel_debug(self -> kernels[index], stdout);
     }
 }
 
@@ -612,5 +606,11 @@ void Grammar_getLALRStates(Grammar self)
     while (! isDone)
     {
 	PropagateFollows(self, &isDone);
+    }
+
+    /* Print out the result */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_debug(self -> kernels[index], stdout);
     }
 }
