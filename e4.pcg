@@ -39,22 +39,18 @@
 <bit-and-exp-list> ::= <bit-and-exp-list> bit-and <bit-shift-exp-list> .
 <bit-and-exp-list> ::= <bit-shift-exp-list> .
 
-<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shl <difference-list> .
-<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shr <difference-list> .
-<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-lsr <difference-list> .
-<bit-shift-exp-list> ::= <difference-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shl <sum-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shr <sum-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-lsr <sum-list> .
+<bit-shift-exp-list> ::= <sum-list> .
 
-<difference-list> ::= <difference-list> minus <sum-list> .
-<difference-list> ::= <sum-list> .
-
-<sum-list> ::= <sum-list> plus <modulo-list> .
-<sum-list> ::= <modulo-list> .
-
-<modulo-list> ::= <modulo-list> mod <product-list> .
-<modulo-list> ::= <product-list> .
+<sum-list> ::= <sum-list> plus <product-list> .
+<sum-list> ::= <sum-list> minus <product-list> .
+<sum-list> ::= <product-list> .
 
 <product-list> ::= <product-list> times <num-exp> .
 <product-list> ::= <product-list> div <num-exp> .
+<product-list> ::= <product-list> mod <num-exp> .
 <product-list> ::= <num-exp> .
 
 <num-exp> ::= <num-value> .
