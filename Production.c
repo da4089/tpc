@@ -1,4 +1,4 @@
-/* $Id: Production.c,v 1.2 1999/02/08 17:17:33 phelps Exp $ */
+/* $Id: Production.c,v 1.3 1999/02/08 18:29:24 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +6,9 @@
 
 struct Production_t
 {
+    /* The receiver's index */
+    int index;
+
     /* The receiver's Nonterminal (the thing on the left-hand side) */
     Nonterminal nonterminal;
 
@@ -37,10 +40,10 @@ void PopulateComponents(Component component, Production self, int *index)
  */
 
 /* Answers a new Production */
-Production Production_alloc(Nonterminal nonterminal, List components)
+Production Production_alloc(Nonterminal nonterminal, List components, int index)
 {
     Production self;
-    int index = 0;
+    int i = 0;
 
     /* Allocates memory for the Production */
     if ((self = (Production) malloc(sizeof(struct Production_t))) == NULL)
@@ -49,10 +52,11 @@ Production Production_alloc(Nonterminal nonterminal, List components)
 	exit(1);
     }
 
+    self -> index = index;
     self -> nonterminal = nonterminal;
     self -> component_count = List_size(components);
     self -> components = (Component *) calloc(self -> component_count, sizeof(Component));
-    List_doWithWith(components, PopulateComponents, self, &index);
+    List_doWithWith(components, PopulateComponents, self, &i);
 
     return self;
 }
@@ -68,17 +72,40 @@ void Production_free(Production self)
 /* Pretty-prints the receiver */
 void Production_print(Production self, FILE *out)
 {
+    Production_printWithOffset(self, out, -1);
+}
+
+/* Pretty-prints the receiver with a * after the nth element */
+void Production_printWithOffset(Production self, FILE *out, int offset)
+{
     int index;
 
     Nonterminal_print(self -> nonterminal, out);
-    fprintf(out, "::= ");
+    fputs("::= ", out);
 
     for (index = 0; index < self -> component_count; index++)
     {
+	if (index == offset)
+	{
+	    fputs("* ", out);
+	}
+
 	Component_print(self -> components[index], out);
+    }
+
+    if (index == offset)
+    {
+	fputs("* ", out);
     }
 }
 
+
+
+/* Answers the receiver's index */
+int Production_getIndex(Production self)
+{
+    return self -> index;
+}
 
 /* Answers the index of the receiver's Nonterminal */
 int Production_getNonterminalIndex(Production self)

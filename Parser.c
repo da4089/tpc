@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.4 1999/02/08 16:32:04 phelps Exp $ */
+/* $Id: Parser.c,v 1.5 1999/02/08 18:29:24 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,6 +129,9 @@ struct Parser_t
     /* The top of the receiver's value stack */
     void **value_top;
 
+    /* The number of productions we've created so far */
+    int production_count;
+
     /* The number of nonterminals we've created so far */
     int nonterminal_count;
 
@@ -225,7 +228,7 @@ static void Reduce1(Parser self)
     list = (List) self -> value_top[2];
 
     /* Create a Production from the Nonterminal and List of components */
-    production = Production_alloc(nonterminal, list);
+    production = Production_alloc(nonterminal, list, self -> production_count++);
 
     /* Go to the new state */
     Push(self, gotoTable[Top(self)][ProductionValue], production);
@@ -356,6 +359,7 @@ Parser Parser_alloc(AcceptCallback callback, void *context)
     self -> value_top = self -> value_stack;
     self -> callback = callback;
     self -> context = context;
+    self -> production_count = 0;
     self -> nonterminal_count = 0;
     self -> nonterminals = Hashtable_alloc(101);
     self -> terminal_count = 0;
