@@ -1,4 +1,4 @@
-/* $Id: Grammar.h,v 1.10 1999/02/12 08:58:41 phelps Exp $
+/* $Id: Grammar.h,v 1.11 1999/02/15 08:03:39 phelps Exp $
  *
  * A Grammar is a collection of Productions which, together with a
  * starting non-terminal, construe a language.  The Grammar can be
@@ -84,7 +84,7 @@ void Grammar_computeClosure(
 /* Marks the first terminals of a given non-terminal in the table */
 void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table);
 
-/* Construct the set of LR(0) states */
-void Grammar_getLALRStates(Grammar self);
+/* Print out a parse table */
+void Grammar_printTable(Grammar self, FILE *out);
 
 #endif /* GRAMMAR_H */
