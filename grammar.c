@@ -28,14 +28,15 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.2 1999/12/11 18:00:44 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.3 1999/12/13 02:24:31 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <component.h>
-#include <production.h>
-#include <grammar.h>
+#include "component.h"
+#include "production.h"
+#include "grammar.h"
+#include "kernel.h"
 
 struct grammar
 {
@@ -48,7 +49,7 @@ struct grammar
     /* The number of terminal symbols */
     int terminal_count;
 
-    /* The terminal symbols */
+    /* The terminals */
     component_t *terminals;
 
     /* The number of nonterminal symbols */
@@ -56,8 +57,36 @@ struct grammar
 
     /* The nonterminals */
     component_t *nonterminals;
+
+    /* A table of productions listed by their left-hand-side */
+    production_t **productions_by_nonterminal;
+
+    /* The number of kernels in the receiver */
+    int kernel_count;
+
+    /* The kernels */
+    kernel_t *kernels;
 };
 
+
+/* Construct the set of LR(0) kernels */
+static void compute_lr0_kernels(grammar_t self)
+{
+    kernel_t seed = kernel_alloc(self, self -> productions[0]);
+    
+    /* FIX THIS: not done yet... */
+    kernel_get_goto_table(seed);
+}
+
+/* Compute the set of LALR(0) states */
+static void compute_lalr_states(grammar_t self)
+{
+    /* Compute the LR0 kernels */
+    compute_lr0_kernels(self);
+
+    printf("compute_lalr_states() not yet implemented\n");
+    exit(1);
+}
 
 /* Allocates and initializes a new nonterminal grammar_t */
 grammar_t grammar_alloc()
@@ -77,6 +106,7 @@ grammar_t grammar_alloc()
     self -> terminals = NULL;
     self -> nonterminal_count = 0;
     self -> nonterminals = NULL;
+    self -> productions_by_nonterminal = NULL;
     return self;
 }
 
@@ -101,27 +131,119 @@ void grammar_free(grammar_t self)
 /* Adds another production to the grammar */
 void grammar_add_production(grammar_t self, production_t production)
 {
+    int index;
+    production_t *array, *probe;
+
+    /* Add the production to the table of productions */
     self -> productions = (production_t *)realloc(
 	self -> productions, (self -> production_count + 1) * sizeof(production_t));
     self -> productions[self -> production_count++] = production;
+
+    /* Add the production to the map of nonterminals to productions */
+    index = component_get_index(production_get_nonterminal(production));
+
+    /* Make sure the table is big enough for this entry */
+    if (! (index < self -> nonterminal_count))
+    {
+	self -> productions_by_nonterminal = (production_t **)realloc(
+	    self -> productions_by_nonterminal,
+	    (index + 1) * sizeof(production_t *));
+
+	/* Null out all of the new entries */
+	while (self -> nonterminal_count < index + 1)
+	{
+	    self -> productions_by_nonterminal[self -> nonterminal_count++] = NULL;
+	}
+    }
+
+    /* If there is no entry for the nonterminal then create one */
+    if ((array = self -> productions_by_nonterminal[index]) == NULL)
+    {
+	self -> productions_by_nonterminal[index] = (production_t *)malloc(sizeof(production_t) * 2);
+	self -> productions_by_nonterminal[index][0] = production;
+	self -> productions_by_nonterminal[index][1] = NULL;
+	return;
+    }
+
+    /* Otherwise count the number of entries */
+    for (probe = array; *probe != NULL; probe++);
+
+    /* Allocate a bigger array */
+    self -> productions_by_nonterminal[index] = (production_t *)realloc(
+	array, sizeof(production_t) * (probe - array + 2));
+
+    /* And install the new production at the end of the array */
+    probe = probe - array + self -> productions_by_nonterminal[index];
+    *(probe++) = production;
+    *probe = NULL;
 }
 
 /* Sets the grammar's set of terminals */
-void grammar_set_terminals(grammar_t self, int count, component_t *terminals)
+void grammar_set_components(
+    grammar_t self,
+    int terminal_count,
+    component_t *terminals,
+    int nonterminal_count,
+    component_t *nonterminals)
 {
-    self -> terminal_count = count;
+    self -> terminal_count = terminal_count;
     self -> terminals = terminals;
+    self -> nonterminal_count = nonterminal_count;
+    self -> nonterminals = nonterminals;
 }
 
-/* Sets the grammar's set of nonterminals */
-void grammar_set_nonterminals(grammar_t self, int count, component_t *nonterminals)
+/* Returns the number of components in the grammar */
+int grammar_get_component_count(grammar_t self)
 {
-    self -> nonterminal_count = count;
-    self -> nonterminals = nonterminals;
+    return self -> terminal_count + self -> nonterminal_count;
+}
+
+/* Construct a single number to represent a production_t and offset */
+int grammar_encode(grammar_t self, production_t production, int offset)
+{
+    return offset * self -> production_count + production_get_index(production);
+}
+
+/* Answers the production and offset encoded by the integer */
+int grammar_decode(grammar_t self, int code, production_t *production_out)
+{
+    *production_out = self -> productions[code % self -> production_count];
+    return code / self -> production_count;
+}
+
+/* Inserts the go-to contribution of the encoded production/offset into the table */
+void grammar_compute_goto(grammar_t self, int **table, int code)
+{
+    fprintf(stderr, "grammar_compute_goto(): not yet implemented\n");
+    exit(1);
+}
+
+/* Print out the kernels */
+void grammar_print_kernels(grammar_t self, FILE *out)
+{
+    fprintf(out, "{grammar_print_kernels()}\n");
 }
 
 /* Pretty-prints the receiver */
 void grammar_print(grammar_t self, FILE *out)
 {
-    fprintf(out, "{grammar}\n");
+    int index;
+
+    /* Print out the productions by nonterminal table */
+    for (index = 0; index < self -> nonterminal_count; index++)
+    {
+	production_t *probe;
+
+	fprintf(out, "\n[%d]:\n", index);
+	if ((probe = self -> productions_by_nonterminal[index]) != NULL)
+	{
+	    while (*probe != NULL)
+	    {
+		fprintf(out, "  ");
+		production_print(*(probe++), out);
+		fprintf(out, "\n");
+	    }
+	}
+    }
 }
+

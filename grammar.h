@@ -31,7 +31,7 @@
 #define GRAMMAR_H
 
 #ifndef lint
-static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.11 1999/12/11 18:00:45 phelps Exp $";
+static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.12 1999/12/13 02:24:32 phelps Exp $";
 #endif /* lint */
 
 /* The grammar type */
@@ -48,10 +48,27 @@ void grammar_free(grammar_t self);
 void grammar_add_production(grammar_t self, production_t production);
 
 /* Sets the grammar's set of terminals */
-void grammar_set_terminals(grammar_t self, int count, component_t *terminals);
+void grammar_set_components(
+    grammar_t self,
+    int terminal_count,
+    component_t *terminals,
+    int nonterminal_count,
+    component_t *nonterminals);
 
-/* Sets the grammar's set of nonterminals */
-void grammar_set_nonterminals(grammar_t self, int count, component_t *nonterminals);
+/* Returns the number of components in the grammar */
+int grammar_get_component_count(grammar_t self);
+
+/* Construct a single number to represent a production_t and offset */
+int grammar_encode(grammar_t self, production_t production, int offset);
+
+/* Answers the production and offset encoded by the integer */
+int grammar_decode(grammar_t self, int code, production_t *production_out);
+
+/* Inserts the go-to contribution of the encoded production/offset into the table */
+void grammar_compute_goto(grammar_t self, int **table, int code);
+
+/* Print out the kernels */
+void grammar_print_kernels(grammar_t self, FILE *out);
 
 /* Pretty-prints the receiver */
 void grammar_print(grammar_t self, FILE *out);
