@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.5 1999/02/11 05:58:09 phelps Exp $ */
+/* $Id: Kernel.c,v 1.6 1999/02/11 07:42:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,11 +13,14 @@ struct Kernel_t
     /* The Kernel's index */
     int index;
 
-    /* The Kernel's follows table */
-    char *follows;
+    /* The Kernel's goto table */
+    Kernel *goto_table;
 
     /* The number of pairs in the Kernel */
     int count;
+
+    /* The follows tables of the kernel items */
+    int *follows;
 
     /* The Kernel's encoded Production/offset pairs */
     int pairs[1];
@@ -85,6 +88,8 @@ static void PopulateKernel(int number, Kernel self, int *index)
     self -> pairs[(*index)++] = number;
 }
 
+
+#if 0
 /* Computes the closure of the receiver */
 void ComputeClosure(Kernel self)
 {
@@ -117,7 +122,6 @@ void ComputeClosure(Kernel self)
     self -> follows = table;
 
     /* Print out the table */
-#if 0
     for (index = 0; index <= production_count; index++)
     {
 	int j;
@@ -129,8 +133,8 @@ void ComputeClosure(Kernel self)
 	}
     }
     printf("\n");
-#endif /* 0 */
 }
+#endif /* 0 */
 
 /*
  *
@@ -177,6 +181,32 @@ void Kernel_debug(Kernel self, FILE *out)
 	fprintf(out, "  %d: ", index);
 	Production_printWithOffset(production, out, offset);
 	fputc('\n', out);
+    }
+
+    if (self -> goto_table != NULL)
+    {
+	int non_count = Grammar_nonterminalCount(self -> grammar);
+	int term_count = Grammar_terminalCount(self -> grammar);
+
+	for (index = 0; index < non_count; index++)
+	{
+	    if (self -> goto_table[index] != 0)
+	    {
+		fputs("    ", out);
+		Nonterminal_print(Grammar_getNonterminal(self -> grammar, index), out);
+		fprintf(out, ": %d\n", Kernel_getIndex(self -> goto_table[index]));
+	    }
+	}
+
+	for (index = 0; index < term_count; index++)
+	{
+	    if (self -> goto_table[index + non_count] != NULL)
+	    {
+		fputs("    ", out);
+		Terminal_print(Grammar_getTerminal(self -> grammar, index), out);
+		fprintf(out, ": %d\n", Kernel_getIndex(self -> goto_table[non_count + index]));
+	    }
+	}
     }
 
     fputc('\n', out);
@@ -267,9 +297,23 @@ Kernel *Kernel_getGotoTable(Kernel self)
 
     free(table);
 
-    /* Compute the initial closure while we're here */
-    ComputeClosure(self);
+    /* Get the grammar to resolve those kernels into the actual kernels */
+    self -> goto_table = result;
     return result;
 }
+
+/* Propagate follows information from this kernel to the ones it derives */
+void Kernel_propagateFollows(Kernel self, int *isDone)
+{
+    int count = Grammar_nonterminalCount(self -> grammar) +
+	Grammar_terminalCount(self -> grammar);
+    Grammar_resolveKernels(self -> grammar, count, self -> goto_table);
+
+    if (self -> follows == NULL)
+    {
+/*	ComputeClosure(self);*/
+    }
+}
+
 
 
