@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.6 1999/12/13 08:48:37 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.7 1999/12/20 15:03:53 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -77,6 +77,19 @@ void component_free(component_t self)
 void component_print(component_t self, FILE *out)
 {
     self -> print(self, out);
+}
+
+/* Prints the receiver as an enum entry */
+void component_print_enum(component_t self, FILE *out)
+{
+    if (self -> index == 0)
+    {
+	fprintf(out, "    TT_EOF = 0");
+    }
+    else
+    {
+	fprintf(out, ",\n    TT_%s", self -> name);
+    }
 }
 
 /* Returns the receiver's name */

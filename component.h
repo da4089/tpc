@@ -31,7 +31,7 @@
 #define COMPONENT_H
 
 #ifndef lint
-static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.5 1999/12/13 08:48:37 phelps Exp $";
+static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.6 1999/12/20 15:03:53 phelps Exp $";
 #endif /* lint */
 
 /* The component type */
@@ -49,6 +49,9 @@ void component_free(component_t self);
 
 /* Pretty-prints the receiver */
 void component_print(component_t self, FILE *out);
+
+/* Prints the receiver as an enum entry */
+void component_print_enum(component_t self, FILE *out);
 
 /* Returns the receiver's name */
 char *component_get_name(component_t self);
