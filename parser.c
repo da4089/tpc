@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.10 1999/12/21 00:22:22 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.11 1999/12/21 00:33:03 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -459,7 +459,6 @@ static int lex_comment(parser_t self, int ch)
     if (ch == '\n')
     {
 	return lex_start(self, ch);
-	return 0;
     }
 
     /* Anything else is part of the comment (and ignored) */
@@ -785,7 +784,7 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
     self -> value_top = self -> value_stack;
 
     /* Allocate some room for the token buffer */
-    if ((self -> token = (unsigned char *)malloc(INITIAL_BUFFER_SIZE)) == NULL)
+    if ((self -> token = (char *)malloc(INITIAL_BUFFER_SIZE)) == NULL)
     {
 	parser_free(self);
 	return NULL;

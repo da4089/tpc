@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     /* Read characters from stdin and give them to the Lexer */
     while (1)
     {
-	char buffer[BUFFER_SIZE];
+	unsigned char buffer[BUFFER_SIZE];
 	ssize_t length;
 
 	if ((length = read(fd, buffer, 2048)) < 0)
