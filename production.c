@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.1 1999/12/11 16:58:48 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.2 1999/12/11 18:03:08 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -85,9 +85,14 @@ void production_free(production_t self)
 	component_free(self -> nonterminal);
     }
 
-    for (index = 0; index < self -> count; index++)
+    if (self -> components != NULL)
     {
-	component_free(self -> components[index]);
+	for (index = 0; index < self -> count; index++)
+	{
+	    component_free(self -> components[index]);
+	}
+
+	free(self -> components);
     }
 
     if (self -> function != NULL)
