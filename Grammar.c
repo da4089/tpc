@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.29 1999/02/17 00:49:32 phelps Exp $ */
+/* $Id: Grammar.c,v 1.30 1999/02/17 00:55:37 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -368,17 +368,20 @@ static void PrintReductionTable(Grammar self, FILE *out)
 /* Prints out the Shift/Reduce table */
 static void PrintShiftReduceTable(Grammar self, FILE *out)
 {
+    int max = self -> production_count + self -> kernel_count;
     int index;
 
     /* Print out some #defines to make all of this work */
     fprintf(out, "#define ERR 0\n");
-    fprintf(out, "#define ACC %d\n", self -> production_count + self -> kernel_count);
+    fprintf(out, "#define ACC %d\n", max);
     fprintf(out, "#define R(x) (x)\n");
     fprintf(out, "#define S(x) (x + %d)\n\n", self -> production_count);
 
     /* Print the SR table header */
-    fprintf(out, "static int sr_table[%d][%d] =\n{\n",
-	    self -> kernel_count, self -> terminal_count);
+    fprintf(out, "static %s sr_table[%d][%d] =\n{\n",
+	    max < 256 ? "char" : "int",
+	    self -> kernel_count,
+	    self -> terminal_count);
 
     /* Go through each kernel and print out its part of the SR table */
     for (index = 0; index < self -> kernel_count; index++)
@@ -401,8 +404,10 @@ static void PrintGotoTable(Grammar self, FILE *out)
     int index;
 
     /* Print the goto table header */
-    fprintf(out, "static int goto_table[%d][%d] = \n{\n",
-	    self -> kernel_count, self -> nonterminal_count);
+    fprintf(out, "static %s goto_table[%d][%d] = \n{\n",
+	    (self -> kernel_count < 256) ? "char" : "int",
+	    self -> kernel_count,
+	    self -> nonterminal_count);
     
     /* Go through each kernel and print its portion of the goto table */
     for (index = 0; index < self -> kernel_count; index++)
