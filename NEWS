@@ -1,3 +1,11 @@
+Overview of changes in tpc-0.5.3
+
+* Forgot to adjust the version number.
+
+Overview of changes in tpc-0.5.2
+
+* Closing stderr and then printing to it has interesting side-effects.
+
 Overview of changes in tpc-0.5.1
 
 * Added various files that make a distribution complete, including
