@@ -1,11 +1,18 @@
-<E-> ::= <E> .
+<E-> ::= <E>
+	[function]
 
-<E> ::= <E> plus <T> .
-<E> ::= <T> .
+<E> ::= <E> plus <T>
+	[function]
+<E> ::= <T>
+	[function]
 
-<T> ::= <T> times <F> .
-<T> ::= <F> .
+<T> ::= <T> times <F>
+	[function]
+<T> ::= <F>
+	[function]
 
-<F> ::= lparen <E> rparen .
-<F> ::= id .
+<F> ::= lparen <E> rparen
+	[function]
+<F> ::= id
+	[function]
 

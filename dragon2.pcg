@@ -1,9 +1,15 @@
-<S-> ::= <S> .
+<S-> ::= <S> 
+	[function]
 
-<S> ::= <L> equals <R> .
-<S> ::= <R> .
+<S> ::= <L> equals <R> 
+	[function]
+<S> ::= <R> 
+	[function]
 
-<L> ::= star <R> .
-<L> ::= id .
+<L> ::= star <R> 
+	[function]
+<L> ::= id 
+	[function]
 
-<R> ::= <L> .
+<R> ::= <L> 
+	[function]
