@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.16 1999/12/20 15:27:32 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.17 1999/12/20 15:37:18 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1337,7 +1337,7 @@ static void print_shift_reduce_table(grammar_t self, FILE *out)
     {
 	if (index != 0)
 	{
-	    printf(",\n");
+	    fprintf(out, ",\n");
 	}
 
 	print_kernel_SR_entry(self, self -> kernels[index], out);
