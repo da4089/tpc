@@ -1,11 +1,13 @@
-bin_PROGRAMS = go
+bin_PROGRAMS = tpc
 
-go_SOURCES = \
+tpc_SOURCES = \
 	pcg.h \
-	grammar.h grammar.c \
 	component.h component.c \
 	production.h production.c \
+	grammar.h grammar.c \
+	kernel.h kernel.c \
 	parser.h parser.c \
+	getopt.h getopt.c getopt1.c \
 	main.c
 
 pcg.h: grammar.pcg
