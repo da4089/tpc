@@ -27,12 +27,31 @@ static struct option long_options[] =
 /* Print the production rule */
 static void parser_cb(void *ignored, grammar_t grammar)
 {
+    FILE *file;
+
+    /* Print the kernels if debug is on */
     if (debug)
     {
 	grammar_print_kernels(grammar, stderr);
     }
 
-    /* Print out the parse table */
+    /* If an output filename was specified then write to it */
+    if (output_filename != NULL)
+    {
+	/* Try to open the output file */
+	if ((file = fopen(output_filename, "w")) == NULL)
+	{
+	    perror("unable to open file for write");
+	    exit(1);
+	}
+
+	/* Write the parse table to the file */
+	grammar_print_table(grammar, file);
+	fclose(file);
+	return;
+    }
+
+    /* Otherwise just print it to stdout */
     grammar_print_table(grammar, stdout);
 }
 
@@ -121,7 +140,7 @@ int main(int argc, char *argv[])
     {
 	if ((fd = open(input_filename, O_RDONLY)) < 0)
 	{
-	    perror("open(): failed");
+	    perror("unable to open file for read");
 	    exit(1);
 	}
     }
