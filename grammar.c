@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.9 1999/12/14 02:49:47 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.10 1999/12/19 03:50:45 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -305,7 +305,7 @@ static void add_pairs_entry(int *counts, int **table, int index, int pair)
 }
 
 /* Returns the index to use for the given component */
-int component_index(grammar_t self, component_t component)
+static int component_index(grammar_t self, component_t component)
 {
     if (component_is_nonterminal(component))
     {
@@ -315,8 +315,55 @@ int component_index(grammar_t self, component_t component)
     return self -> nonterminal_count + component_get_index(component);
 }
 
-/* Computes the pairs table for the given kernel */
-void compute_pairs(grammar_t self, kernel_t kernel, int *counts, int **table)
+
+/* Computes the contribution of an item in the kernel to the pairs table */
+static void
+compute_pairs_for_kernel_item(
+    grammar_t self,
+    production_t production,
+    int offset,
+    int *counts,
+    int **table)
+{
+    component_t component;
+    int index;
+    char *generates;
+    int i;
+
+    /* Look up the component and see if it's a nonterminal */
+    if ((component = production_get_component(production, offset)) == NULL ||
+	! component_is_nonterminal(component))
+    {
+	return;
+    }
+
+    index = component_get_index(component);
+    generates = self -> generates[index];
+
+    /* Go through the generates entry for this component */
+    for (i = 0; i < self -> nonterminal_count; i++)
+    {
+	if (index == i || (generates != NULL && generates[i]))
+	{
+	    production_t *probe;
+
+	    for (probe = self -> productions_by_nonterminal[i]; *probe != NULL; probe++)
+	    {
+		add_pairs_entry(
+		    counts, table,
+		    component_index(self, production_get_component(*probe, 0)),
+		    encode(self, production_get_index(*probe), 1));
+	    }
+	}
+    }
+}
+
+
+
+/* Fills in the pairs table for the given kernel.  The table encodes
+ * which kernel to go to when a given component is encountered while
+ * parsing in this kernel. */
+static void compute_pairs(grammar_t self, kernel_t kernel, int *counts, int **table)
 {
     int count;
     int *pairs;
@@ -348,51 +395,11 @@ void compute_pairs(grammar_t self, kernel_t kernel, int *counts, int **table)
     {
 	int production_index;
 	int offset = decode(self, pairs[index], &production_index);
-	production_t production = self -> productions[production_index];
-	component_t component = production_get_component(production, offset);
 
-	/* Look up the next component */
-	if (component != NULL && component_is_nonterminal(component))
-	{
-	    int ci = component_get_index(component);
-	    char *generates = self -> generates[ci];
-	    int j;
-
-	    /* Make sure the entry gets put in even if it doesn't generate anything else */
-	    if (generates == NULL)
-	    {
-		production_t *probe;
-
-		/* Generate each production */
-		for (probe = self -> productions_by_nonterminal[ci]; *probe != NULL; probe++)
-		{
-		    add_pairs_entry(
-			counts, table,
-			component_index(self, production_get_component(*probe, 0)),
-			encode(self, production_get_index(*probe), 1));
-		}
-	    }
-	    else
-	    {
-		/* Go through the generates entry for this component */
-		for (j = 0; j < self -> nonterminal_count; j++)
-		{
-		    if (generates[j] || ci == j)
-		    {
-			production_t *probe;
-			
-			/* Generate each production */
-			for (probe = self -> productions_by_nonterminal[j]; *probe != NULL; probe++)
-			{
-			    add_pairs_entry(
-				counts, table,
-				component_index(self, production_get_component(*probe, 0)),
-				encode(self, production_get_index(*probe), 1));
-			}
-		    }
-		}
-	    }
-	}
+	compute_pairs_for_kernel_item(
+	    self,
+	    self -> productions[production_index], offset,
+	    counts, table);
     }
 }
 
