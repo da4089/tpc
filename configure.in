@@ -1,15 +1,15 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(main.c)
-AM_INIT_AUTOMAKE(pc, 0.4)
+AC_INIT(component.c)
+AM_INIT_AUTOMAKE(pc, 0.5)
 
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_PATH_PROG(PC, pc, true)
 
 dnl Checks for libraries.
 
 dnl Checks for header files.
-CPPFLAGS="-Wall $CPPFLAGS"
 AC_HEADER_STDC
 
 dnl Checks for typedefs, structures, and compiler characteristics.
