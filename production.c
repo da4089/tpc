@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.5 1999/12/13 04:19:20 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.6 1999/12/20 07:35:12 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -164,7 +164,4 @@ void production_print_with_offset(production_t self, FILE *out, int offset)
     {
 	fprintf(out, "* ");
     }
-
-    /* Print the production index */
-    printf("[%d: %s]", self -> index, self -> function);
 }
