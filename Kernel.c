@@ -1,7 +1,8 @@
-/* $Id: Kernel.c,v 1.13 1999/02/12 08:59:07 phelps Exp $ */
+/* $Id: Kernel.c,v 1.14 1999/02/12 12:19:05 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Kernel.h"
 
 /* The structure of a kernel */
@@ -214,16 +215,16 @@ static void PropagatePrepare(
     /* Otherwise, repeate for each terminal in the first set of the nonterminal */
     else
     {
-	int length = Grammar_terminalCount(self -> grammar) * sizeof(char);
+	int count = Grammar_terminalCount(self -> grammar);
+	char *firsts = (char *) alloca(count * sizeof(char));
 	int index;
-	char *firsts = (char *) alloca(length);
 
 	/* Get the first-set of the nonterminal */
-	memset(firsts, 0, length);
+	memset(firsts, 0, count * sizeof(char));
 	Grammar_markFirst(self -> grammar, (Nonterminal)after, firsts);
 
 	/* Do each item in the set */
-	for (index = 0; index < length; index++)
+	for (index = 0; index < count; index++)
 	{
 	    if (firsts[index] != 0)
 	    {
@@ -590,7 +591,9 @@ int Kernel_addFollowsTerminal(Kernel self, int pair, Terminal terminal)
     {
 	if (self -> pairs[index] == pair)
 	{
-	    char *pointer = self -> follows + 
+	    char *pointer;
+
+	    pointer = self -> follows + 
 		(index * Grammar_terminalCount(self -> grammar)) +
 		Terminal_getIndex(terminal);
 
