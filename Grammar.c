@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.11 1999/02/11 05:57:52 phelps Exp $ */
+/* $Id: Grammar.c,v 1.12 1999/02/11 07:44:50 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +15,14 @@ struct Grammar_t
     /* The number of non-terminals in the grammar */
     int nonterminal_count;
 
+    /* The grammar's non-terminals */
+    Nonterminal *nonterminals;
+
     /* The number of terminals in the grammar */
     int terminal_count;
+
+    /* The grammar's terminals */
+    Terminal *terminals;
 
     /* The Grammar's productions */
     Production *productions;
@@ -217,11 +223,7 @@ void ComputeLR0Kernels(Grammar self)
 	    Kernel k = table[index];
 	    if (k != NULL)
 	    {
-		if (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) != NULL)
-		{
-		    Kernel_free(k);
-		}
-		else
+		if (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) == NULL)
 		{
 		    List_addLast(list, k);
 		    List_addLast(queue, k);
@@ -252,7 +254,19 @@ void ComputeLR0Kernels(Grammar self)
 /* Propagate to follows information */
 static void PropagateFollows(Grammar self, int *isDone)
 {
+    int index;
     *isDone = 1;
+
+    /* Go through each Kernel item and propagate its follows information */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_propagateFollows(self -> kernels[index], isDone);
+    }
+
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_debug(self -> kernels[index], stdout);
+    }
 }
 
 
@@ -263,7 +277,12 @@ static void PropagateFollows(Grammar self, int *isDone)
  */
 
 /* Allocates a new Grammar with the given Productions */
-Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_count)
+Grammar Grammar_alloc(
+    List productions,
+    int nonterminal_count,
+    Nonterminal *nonterminals,
+    int terminal_count,
+    Terminal *terminals)
 {
     Grammar self;
     int index = 0;
@@ -278,7 +297,9 @@ Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_coun
     /* Set some initial values */
     self -> production_count = List_size(productions);
     self -> nonterminal_count = nonterminal_count;
+    self -> nonterminals = nonterminals;
     self -> terminal_count = terminal_count;
+    self -> terminals = terminals;
 
     /* Copy the productions into the receiver */
     self -> productions = (Production *)calloc(self -> production_count, sizeof(Production));
@@ -316,17 +337,28 @@ void Grammar_debug(Grammar self, FILE *out)
     }
 }
 
-
 /* Answers the number of nonterminals in the receiver */
 int Grammar_nonterminalCount(Grammar self)
 {
     return self -> nonterminal_count;
 }
 
+/* Answers the indexed non-terminal */
+Nonterminal Grammar_getNonterminal(Grammar self, int index)
+{
+    return self -> nonterminals[index];
+}
+
 /* Answers the number of terminals in the receiver */
 int Grammar_terminalCount(Grammar self)
 {
     return self -> terminal_count;
+}
+
+/* Answers the indexed terminal */
+Terminal Grammar_getTerminal(Grammar self, int index)
+{
+    return self -> terminals[index];
 }
 
 /* Answers the number of productions in the receiver */
@@ -383,6 +415,41 @@ void Grammar_computeGoto(Grammar self, List *table, int number)
 		}
 	    }
 	}
+    }
+}
+
+/* Transforms a Kernel into an actual kernel */
+Kernel Grammar_resolveKernel(Grammar self, Kernel kernel)
+{
+    int index;
+
+    if (kernel == NULL)
+    {
+	return NULL;
+    }
+
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	if (Kernel_equals(kernel, self -> kernels[index]))
+	{
+	    free(kernel);
+	    return self -> kernels[index];
+	}
+    }
+
+    printf("uh oh...\n");
+    Kernel_debug(kernel, stdout);
+    exit(1);
+}
+
+/* Transforms a table of Kernels into the "actual" kernels of the receiver */
+void Grammar_resolveKernels(Grammar self, int count, Kernel *kernels)
+{
+    int index;
+
+    for (index = 0; index < count; index++)
+    {
+	kernels[index] = Grammar_resolveKernel(self, kernels[index]);
     }
 }
 
@@ -518,7 +585,7 @@ void Grammar_getLALRStates(Grammar self)
     ComputeLR0Kernels(self);
 
     /* Mark the initial follows information for production 0 in kernel 0 */
-    Kernel_markEOF(self -> kernels[0]);
+/*    Kernel_markEOF(self -> kernels[0]);*/
 
     /* Keep propagating the follows information until it stops changing */
     while (! isDone)
