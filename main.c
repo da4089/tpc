@@ -6,7 +6,7 @@
 /* Print the production rule */
 static void Frumble(void *ignored, Grammar grammar)
 {
-    Grammar_getLR0States(grammar);
+    Grammar_getLALRStates(grammar);
 }
 
 /* Parse args and go */
