@@ -1,156 +1,164 @@
-<sub-exp> ::= <or-exp-list>
-	[function]
+<sub-exp> ::= <disjunction>
+	[Accept]
 
-<or-exp-list> ::= <or-exp-list> BOOL_OR <xor-exp-list>
-	[function]
-<or-exp-list> ::= <xor-exp-list>
-	[function]
 
-<xor-exp-list> ::= <xor-exp-list> BOOL_XOR <and-exp-list>
-	[function]
-<xor-exp-list> ::= <and-exp-list>
-	[function]
+<function-exp> ::= LPAREN <function-exp> RPAREN
+	[CreateNestedFunctionExp]
+<function-exp> ::= <function>
+	[FunctionExpFromFunction]
 
-<and-exp-list> ::= <and-exp-list> BOOL_AND <bool-exp>
-	[function]
-<and-exp-list> ::= <bool-exp>
-	[function]
+<function> ::= ID LPAREN <arg-list> RPAREN
+	[CreateFunction]
+
+<disjunction> ::= <disjunction> OR <xor-exp>
+	[ExtendDisjunction]
+<disjunction> ::= <xor-exp>
+	[DisjunctionFromXorExp]
+
+<xor-exp> ::= <xor-exp> XOR <conjunction>
+	[ExtendXorExp]
+<xor-exp> ::= <conjunction>
+	[XorExpFromConjunction]
+
+<conjunction> ::= <conjunction> AND <bool-exp>
+	[ExtendConjunction]
+<conjunction> ::= <bool-exp>
+	[ConjunctionFromBoolExp]
 
 <bool-exp> ::= <value> <predicate> <value>
-	[function]
-<bool-exp> ::= <function>
-	[function]
+	[BoolExpFromComparison]
+<bool-exp> ::= <function-exp>
+	[BoolExpFromFunctionExp]
 <bool-exp> ::= BANG <bool-exp>
-	[function]
+	[BoolExpFromNegation]
+<bool-exp> ::= LPAREN <disjunction> RPAREN
+	[CreateNestedBoolExp]
 
 <value> ::= STRING
-	[function]
-<value> ::= <function>
-	[function]
-<value> ::= <bit-or-exp-list>
-	[function]
+	[ValueFromString]
+<value> ::= <bit-disjunction>
+	[ValueFromBitDisjunction]
 
 <predicate> ::= EQ
-	[function]
+	[PredicateFromEQ]
 <predicate> ::= NEQ
-	[function]
+	[Function]
 <predicate> ::= LT
-	[function]
+	[Function]
 <predicate> ::= GT
-	[function]
+	[Function]
 <predicate> ::= LE
-	[function]
+	[PredicateFromLE]
 <predicate> ::= GE
-	[function]
+	[Function]
 
-<bit-or-exp-list> ::= <bit-or-exp-list> BIT_OR <bit-xor-exp-list>
-	[function]
-<bit-or-exp-list> ::= <bit-xor-exp-list>
-	[function]
 
-<bit-xor-exp-list> ::= <bit-xor-exp-list> BIT_XOR <bit-and-exp-list>
-	[function]
-<bit-xor-exp-list> ::= <bit-and-exp-list>
-	[function]
+<bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>
+	[Function]
+<bit-disjunction> ::= <bit-xor-exp>
+	[BitDisjunctionFromBitXorExp]
 
-<bit-and-exp-list> ::= <bit-and-exp-list> BIT_AND <bit-shift-exp-list>
-	[function]
-<bit-and-exp-list> ::= <bit-shift-exp-list>
-	[function]
+<bit-xor-exp> ::= <bit-xor-exp> BIT_XOR <bit-conjunction>
+	[Function]
+<bit-xor-exp> ::= <bit-conjunction>
+	[BitXorExpFromBitConjunction]
 
-<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHL <sum-list>
-	[function]
-<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHR <sum-list>
-	[function]
-<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_LSR <sum-list>
-	[function]
-<bit-shift-exp-list> ::= <sum-list>
-	[function]
+<bit-conjunction> ::= <bit-conjunction> BIT_AND <bit-shift-exp>
+	[Function]
+<bit-conjunction> ::= <bit-shift-exp>
+	[BitConjunctionFromBitShiftExp]
 
-<sum-list> ::= <sum-list> PLUS <product-list>
-	[function]
-<sum-list> ::= <sum-list> MINUS <product-list>
-	[function]
-<sum-list> ::= <product-list>
-	[function]
+<bit-shift-exp> ::= <bit-shift-exp> BIT_SHL <sum>
+	[Function]
+<bit-shift-exp> ::= <bit-shift-exp> BIT_SHR <sum>
+	[Function]
+<bit-shift-exp> ::= <bit-shift-exp> BIT_LSR <sum>
+	[Function]
+<bit-shift-exp> ::= <sum>
+	[BitShiftExpFromSum]
 
-<product-list> ::= <product-list> TIMES <num-exp>
-	[function]
-<product-list> ::= <product-list> DIV <num-exp>
-	[function]
-<product-list> ::= <product-list> MOD <num-exp>
-	[function]
-<product-list> ::= <num-exp>
-	[function]
+<sum> ::= <sum> PLUS <product>
+	[SumFromPlusExp]
+<sum> ::= <sum> MINUS <product>
+	[SumFromMinusExp]
+<sum> ::= <product>
+	[SumFromProduct]
 
-<num-exp> ::= <num-value>
-	[function]
+<product> ::= <product> TIMES <num-exp>
+	[ProductFromTimesExp]
+<product> ::= <product> DIV <num-exp>
+	[Function]
+<product> ::= <product> MOD <num-exp>
+	[ProductFromModExp]
+<product> ::= <num-exp>
+	[ProductFromNumExp]
+
 <num-exp> ::= MINUS <num-value>
-	[function]
+	[Function]
 <num-exp> ::= NEG <num-value>
-	[function]
+	[Function]
+<num-exp> ::= <num-value>
+	[NumExpFromNumValue]
+
 
 <num-value> ::= INT32
-	[function]
+	[NumValueFromINT32]
 <num-value> ::= INT64
-	[function]
+	[Function]
 <num-value> ::= REAL64
-	[function]
+	[Function]
 <num-value> ::= <name>
-	[function]
-<num-value> ::= LPAREN <or-exp-list> RPAREN
-	[function]
+	[NumValueFromName]
+<num-value> ::= <function-exp>
+	[NumValueFromFunctionExp]
+<num-value> ::= LPAREN <value> RPAREN
+	[CreateNestedNumValue]
+
 
 <name> ::= ID
-	[function]
+	[NameFromId]
 <name> ::= EQ
-	[function]
+	[Function]
 <name> ::= NEQ
-	[function]
+	[Function]
 <name> ::= LT
-	[function]
+	[Function]
 <name> ::= GT
-	[function]
+	[Function]
 <name> ::= GE
-	[function]
+	[Function]
 <name> ::= LE
-	[function]
-<name> ::= BOOL_OR
-	[function]
-<name> ::= BOOL_XOR
-	[function]
-<name> ::= BOOL_AND
-	[function]
+	[Function]
+<name> ::= OR
+	[Function]
+<name> ::= XOR
+	[Function]
+<name> ::= AND
+	[Function]
 <name> ::= BIT_OR
-	[function]
+	[Function]
 <name> ::= BIT_XOR
-	[function]
+	[Function]
 <name> ::= BIT_AND
-	[function]
+	[Function]
 <name> ::= BIT_SHL
-	[function]
+	[Function]
 <name> ::= BIT_SHR
-	[function]
+	[Function]
 <name> ::= BIT_LSR
-	[function]
+	[Function]
 <name> ::= PLUS
-	[function]
+	[Function]
 <name> ::= MOD
-	[function]
+	[Function]
 <name> ::= TIMES
-	[function]
+	[Function]
 <name> ::= DIV
-	[function]
+	[Function]
 
-<function> ::= <function-name> LPAREN RPAREN
-	[function]
-<function> ::= <function-name> LPAREN <arg-list> RPAREN
-	[function]
-
-<function-name> ::= ID
-	[function]
 
 <arg-list> ::= <arg-list> COMMA <value>
-	[function]
+	[Function]
 <arg-list> ::= <value>
-	[function]
+	[CreateArgList]
+
