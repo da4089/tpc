@@ -1,4 +1,4 @@
-/* $Id: Terminal.c,v 1.5 1999/02/11 07:39:07 phelps Exp $ */
+/* $Id: Terminal.c,v 1.6 1999/02/16 08:39:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,6 +76,21 @@ void Terminal_free(Terminal self)
 void Terminal_print(Terminal self, FILE *out)
 {
     fprintf(out, "%s ", self -> name);
+}
+
+/* Pretty-prints the receiver for the enum */
+void Terminal_printEnum(Terminal self, FILE *out)
+{
+    fputs("TT_", out);
+
+    if (self -> index == 0)
+    {
+	fputs("EOF = 0", out);
+    }
+    else
+    {
+	fputs(self -> name, out);
+    }
 }
 
 /* Answers the receiver's index */
