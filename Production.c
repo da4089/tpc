@@ -1,4 +1,4 @@
-/* $Id: Production.c,v 1.4 1999/02/08 19:44:30 phelps Exp $ */
+/* $Id: Production.c,v 1.5 1999/02/11 01:46:45 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -122,7 +122,12 @@ int Production_getCount(Production self)
 /* Answers one of the receiver's Components */
 Component Production_getComponent(Production self, int index)
 {
-    return self -> components[index];
+    if (index < self -> count)
+    {
+	return self -> components[index];
+    }
+
+    return NULL;
 }
 
 /* Answers the receiver's first Component */
