@@ -1,0 +1,19 @@
+<start> ::= <expression>
+	[function]
+
+<expression> ::= <expression> PLUS <term>
+	[function]
+<expression> ::= <terxm>
+	[function]
+
+<term> ::= <term> TIMES <factor>
+	[function]
+
+<term> ::= <factor>
+	[function]
+
+<factor> ::= lparen <expression> rparen
+	[function]
+<factor> ::= id
+	[function]
+
