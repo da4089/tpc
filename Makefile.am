@@ -12,4 +12,5 @@ pc_SOURCES = \
 	StringBuffer.h StringBuffer.c \
 	Hash.h Hash.c \
 	List.h List.c \
+	getopt.h getopt.c getopt1.c \
 	main.c
