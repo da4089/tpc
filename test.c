@@ -11,13 +11,32 @@ static void **value_top = value_stack;
 
 static void *Accept()
 {
-    printf("Accept!\n");
+    printf("<sub-exp> ::= <disjunction> [ACCEPT]\n");
     return NULL;
 }
 
+static void *CreateNestedFunctionExp()
+{
+    printf("<function-exp> ::= LPAREN <function-exp> RPAREN\n");
+    return NULL;
+}
+
+static void *FunctionExpFromFunction()
+{
+    printf("<function-exp> ::= <function>\n");
+    return NULL;
+}
+
+static void *CreateFunction()
+{
+    printf("<function> ::= ID LPAREN <arg-list> RPAREN\n");
+    return NULL;
+}
+
+
 static void *ExtendDisjunction()
 {
-    printf("<disjunction> ::= <disjunction> BOOL_OR <xor-exp>\n");
+    printf("<disjunction> ::= <disjunction> OR <xor-exp>\n");
     return NULL;
 }
 
@@ -29,7 +48,13 @@ static void *DisjunctionFromXorExp()
 
 static void *ExtendConjunction()
 {
-    printf("<conjunction> ::= <conjunction> BOOL_AND <bool-exp>\n");
+    printf("<conjunction> ::= <conjunction> AND <bool-exp>\n");
+    return NULL;
+}
+
+static void *ExtendXorExp()
+{
+    printf("<xor-exp> ::= <xor-exp> XOR <conjunction>\n");
     return NULL;
 }
 
@@ -52,9 +77,9 @@ static void *BoolExpFromComparison()
     return NULL;
 }
 
-static void *BoolExpFromBoolFunction()
+static void *BoolExpFromFunctionExp()
 {
-    printf("<bool-exp> ::= <bool-function>\n");
+    printf("<bool-exp> ::= <function>\n");
     return NULL;
 }
 
@@ -70,9 +95,9 @@ static void *CreateNestedBoolExp()
     return NULL;
 }
 
-static void *NumValueFromValueFunction()
+static void *NumValueFromFunctionExp()
 {
-    printf("<num-value> ::= <value-function>\n");
+    printf("<num-value> ::= <function-exp>\n");
     return NULL;
 }
 
@@ -97,12 +122,6 @@ static void *PredicateFromEQ()
 static void *PredicateFromLE()
 {
     printf("<predicate> ::= LE\n");
-    return NULL;
-}
-
-static void *CreatePrimaryFunction()
-{
-    printf("<value-function> ::= PRIMARY LPAREN <value> RPAREN\n");
     return NULL;
 }
 
@@ -196,30 +215,6 @@ static void *NameFromId()
     return NULL;
 }
 
-static void *CreateExistsFunction()
-{
-    printf("<bool-function> ::= EXISTS LPAREN <name> RPAREN\n");
-    return NULL;
-}
-
-static void *CreateIsInt32Function()
-{
-    printf("<bool-function> ::= IS_INT32 LPAREN <name> RPAREN\n");
-    return NULL;
-}
-
-static void *CreateRegexFunction()
-{
-    printf("<bool-function> ::= REGEX LPAREN <name> COMMA <arg-list> RPAREN\n");
-    return NULL;
-}
-
-static void *CreateDecomposeFunction()
-{
-    printf("<value-function> ::= DECOMPOSE LPAREN <value> RPAREN\n");
-    return NULL;
-}
-
 static void *CreateArgList()
 {
     printf("<arg-list> ::= <value>\n");
@@ -258,44 +253,25 @@ static int Top()
 
 static void ShiftReduce(terminal_t type, void *value)
 {
-    while (1)
+    int state;
+    int action;
+
+    /* Reduce as many times as possible */
+    while (IS_REDUCE(action = sr_table[Top()][type]))
     {
-	int state = Top();
-	int action = sr_table[state][type];
 	struct production *production;
 	int reduction;
 	void *result;
 
-	/* Watch for errors */
-	if (IS_ERROR(action))
-	{
-	    fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
-	    exit(0);
-	}
-
-	/* Accept if we can */
-	if (IS_ACCEPT(action))
-	{
-	    Accept();
-	    return;
-	}
-
-	/* Shift if we can */
-	if (IS_SHIFT(action))
-	{
-	    printf("s%d\n", SHIFT_GOTO(action));
-	    Push(SHIFT_GOTO(action), value);
-	    return;
-	}
-
-	/* Locate the production we're going to use to reduce */
+	/* Locate the production we're going to use to do the reduction */
 	reduction = REDUCTION(action);
-	production = &productions[reduction];
+	production = productions + reduction;
 
+	/* Print an unhelpful message */
 	printf("r%d, ", reduction);
 	fflush(stdout);
 
-	/* Pop stuff off of the stack */
+	/* Pop stuff off the stack */
 	Pop(production -> count);
 
 	/* Reduce */
@@ -304,6 +280,29 @@ static void ShiftReduce(terminal_t type, void *value)
 	/* Push the result of the reduction back onto the stack */
 	Push(REDUCE_GOTO(Top(), production), result);
     }
+
+    /* And then (hopefully) shift */
+    if (IS_SHIFT(action))
+    {
+	printf("s%d\n", SHIFT_GOTO(action));
+	Push(SHIFT_GOTO(action), value);
+	return;
+    }
+
+    /* Accept if we can */
+    if (IS_ACCEPT(action))
+    {
+	/* Pop the result off of the stack */
+	Pop(1);
+
+	/* Accept the result */
+	Accept();
+	return;
+    }
+
+    /* Otherwise it must be an error */
+    fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
+    exit(0);
 }
 
 
@@ -312,37 +311,19 @@ int main(int argc, char *argv[])
     *state_top = 0;
     printf("hello sailor\n");
 
-    ShiftReduce(TT_EXISTS, NULL);
     ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_ID, "sizeof");
+    ShiftReduce(TT_LPAREN, NULL);
+    ShiftReduce(TT_ID, "BOB");
     ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_BOOL_OR, NULL);
-    ShiftReduce(TT_BANG, NULL);
-    ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_REGEX, NULL);
-    ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_ID, "TICKERTAPE");
-    ShiftReduce(TT_COMMA, NULL);
-    ShiftReduce(TT_STRING, ".*[Mm]ail.*");
     ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_BOOL_OR, NULL);
-    ShiftReduce(TT_ID, "TICKERTAPE");
     ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_STRING, "Rakoto");
-    ShiftReduce(TT_BOOL_OR, NULL);
-    ShiftReduce(TT_ID, "TICKERTAPE");
-    ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_STRING, "lawley-rcvstore");
-    ShiftReduce(TT_BOOL_OR, NULL);
-    ShiftReduce(TT_ID, "TICKERTAPE");
-    ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_STRING, "weather");
-    ShiftReduce(TT_BOOL_OR, NULL);
-    ShiftReduce(TT_ID, "TICKERTAPE");
-    ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_STRING, "fourskins");
+    ShiftReduce(TT_ID, "sizeof");
+    ShiftReduce(TT_LPAREN, NULL);
+    ShiftReduce(TT_ID, "DAVE");
     ShiftReduce(TT_RPAREN, NULL);
 
     ShiftReduce(TT_EOF, NULL);
+    printf("sizeof(short)=%d\n", sizeof(short));
     return 0;
 }
