@@ -1,0 +1,11 @@
+<E-> ::= <E> .
+
+<E> ::= <E> plus <T> .
+
+<T> ::= <T> times <F> .
+<T> ::= <F> .
+
+<F> ::= lparen <E> rparen .
+<F> ::= id .
+
+<E> ::= <T> .
