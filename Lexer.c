@@ -1,4 +1,4 @@
-/* $Id: Lexer.c,v 1.5 1999/02/16 08:38:50 phelps Exp $ */
+/* $Id: Lexer.c,v 1.6 1999/02/16 09:32:10 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,9 +53,10 @@ static void StartToken(Lexer self, int ch)
 	    return;
 	}
 
-	/* End-of-production character */
-	case '.':
+	/* Start of function */
+	case '[':
 	{
+	    StringBuffer_clear(self -> buffer);
 	    self -> state = 8;
 	    return;
 	}
@@ -127,7 +128,7 @@ static void ReadNonterminalName1(Lexer self, int ch)
 	return;
     }
 
-    fprintf(stderr, "*** Bogus terminal name <%c\n", ch);
+    fprintf(stderr, "*** Bogus nonterminal name <%c\n", ch);
     self -> state = 0;
 }
 
@@ -146,8 +147,8 @@ static void ReadNonterminalName2(Lexer self, int ch)
 	return;
     }
 
-    fprintf(stderr, "*** Bogus terminal name <%s%c\n", StringBuffer_getBuffer(self -> buffer), ch);
-    self -> state = 0;
+    fprintf(stderr, "*** Bogus nonterminal name <%s%c\n", StringBuffer_getBuffer(self -> buffer), ch);
+    exit(1);
 }
 
 /* Accept a nonterminal token */
@@ -175,10 +176,42 @@ static void ReadTerminal(Lexer self, int ch)
     Lexer_acceptChar(self, ch);
 }
 
-/* Accept an end-of-production character */
-static void AcceptStop(Lexer self, int ch)
+
+static void ReadFunction1(Lexer self, int ch)
 {
-    Parser_acceptStop(self -> parser);
+    if ((ch == '_') || isalpha(ch))
+    {
+	StringBuffer_appendChar(self -> buffer, ch);
+	self -> state = 9;
+	return;
+    }
+
+    fprintf(stderr, "*** Bogus function name [%s%c\n", StringBuffer_getBuffer(self -> buffer), ch);
+    exit(1);
+}
+
+static void ReadFunction2(Lexer self, int ch)
+{
+    if (ch == ']')
+    {
+	self -> state = 10;
+	return;
+    }
+
+    if ((ch == '_') || isalpha(ch) || isdigit(ch))
+    {
+	StringBuffer_appendChar(self -> buffer, ch);
+	self -> state = 9;
+	return;
+    }
+
+    fprintf(stderr, "*** Bogus function name [%s%c\n", StringBuffer_getBuffer(self -> buffer), ch);
+    exit(1);
+}
+
+static void AcceptFunction(Lexer self, int ch)
+{
+    Parser_acceptFunction(self -> parser, StringBuffer_getBuffer(self -> buffer));
 
     self -> state = 0;
     Lexer_acceptChar(self, ch);
@@ -280,11 +313,27 @@ void Lexer_acceptChar(Lexer self, int ch)
 	    return;
 	}
 
-	/* Read an end-of-production character */
+	/* Reading a function [foo] token */
 	case 8:
 	{
-	    AcceptStop(self, ch);
+	    ReadFunction1(self, ch);
 	    return;
 	}
+
+	/* Reading a function [foo] token */
+	case 9:
+	{
+	    ReadFunction2(self, ch);
+	    return;
+	}
+
+
+	/* Reading a function [foo] token */
+	case 10:
+	{
+	    AcceptFunction(self, ch);
+	    return;
+	}
+
     }
 }
