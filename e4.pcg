@@ -1,4 +1,4 @@
-################################################################
+###############################################################
 #
 #  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1998.
 #  Unpublished work.  All Rights Reserved.
@@ -31,7 +31,7 @@
 #  File:     $Source: /home/phelps/CVS/tpc/e4.pcg,v $
 #
 #  Description:
-#            Routine for converting process to a daemon
+#            Grammar for the elvin4 subscription language
 #
 #  Author:
 #            Ted Phelps
@@ -39,7 +39,7 @@
 #################################################################
 
 <sub-exp> ::= <disjunction>
-	[Accept]
+	[accept_sub]
 
 #
 # We introduce <function-exp> in order to get around the inherent
@@ -58,19 +58,24 @@
 # productions because the parser compiler will use the first listed
 # production when it encounters this ambiguity.
 #
-
 <function-exp> ::= LPAREN <function-exp> RPAREN
-	[CreateNestedFunctionExp]
+	[identity2]
 <function-exp> ::= <function>
-	[FunctionExpFromFunction]
+	[identity]
 
-<function> ::= ID LPAREN <arg-list> RPAREN
-	[CreateFunction]
+# Functions with arguments
+<function> ::= ID LPAREN <args> RPAREN
+	[create_function_n]
 
-<arg-list> ::= <arg-list> COMMA <value>
-	[ExtendArgList]
-<arg-list> ::= <value>
-	[CreateArgList]
+# Functions with no arguments
+<function> ::= ID LPAREN RPAREN
+	[create_function_0]
+
+# Argument lists of varying lengths
+<args> ::= <args> COMMA <value>
+	[extend_args]
+<args> ::= <value>
+	[create_args]
 
 
 #
@@ -78,52 +83,43 @@
 #
 
 <disjunction> ::= <disjunction> OR <xor-exp>
-	[ExtendDisjunction]
+	[extend_disjunction]
 <disjunction> ::= <xor-exp>
-	[DisjunctionFromXorExp]
+	[create_disjunction]
 
 <xor-exp> ::= <xor-exp> XOR <conjunction>
-	[ExtendXorExp]
+	[extend_xor_exp]
 <xor-exp> ::= <conjunction>
-	[XorExpFromConjunction]
+	[create_xor_exp]
 
 <conjunction> ::= <conjunction> AND <bool-exp>
-	[ExtendConjunction]
+	[extend_conjunction]
 <conjunction> ::= <bool-exp>
-	[ConjunctionFromBoolExp]
+	[create_conjunction]
 
-<bool-exp> ::= <value> <predicate> <value>
-	[BoolExpFromComparison]
+<bool-exp> ::= <value> EQ <value>
+	[create_eq_comparison]
+<bool-exp> ::= <value> NEQ <value>
+	[create_neq_comparison]
+<bool-exp> ::= <bit-disjunction> LT <bit-disjunction>
+	[create_lt_comparison]
+<bool-exp> ::= <bit-disjunction> LE <bit-disjunction>
+	[create_le_comparison]
+<bool-exp> ::= <bit-disjunction> GT <bit-disjunction>
+	[create_gt_comparison]
+<bool-exp> ::= <bit-disjunction> GE <bit-disjunction>
+	[create_ge_comparison]
 <bool-exp> ::= <function-exp>
-	[BoolExpFromFunctionExp]
+	[identity]
 <bool-exp> ::= BANG <bool-exp>
-	[BoolExpFromNegation]
+	[create_not_op]
 <bool-exp> ::= LPAREN <disjunction> RPAREN
-	[CreateNestedBoolExp]
-
+	[identity2]
 
 <value> ::= STRING
-	[ValueFromString]
+	[identity]
 <value> ::= <bit-disjunction>
-	[ValueFromBitDisjunction]
-
-
-#
-# Comparison predicates
-#
-
-<predicate> ::= EQ
-	[PredicateFromEQ]
-<predicate> ::= NEQ
-	[PredicateFromNEQ]
-<predicate> ::= LT
-	[PredicateFromLT]
-<predicate> ::= GT
-	[PredicateFromGT]
-<predicate> ::= LE
-	[PredicateFromLE]
-<predicate> ::= GE
-	[PredicateFromGE]
+	[identity]
 
 
 #
@@ -131,67 +127,66 @@
 #
 
 <bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>
-	[ExtendBitDisjunction]
+	[create_or_op]
 <bit-disjunction> ::= <bit-xor-exp>
-	[BitDisjunctionFromBitXorExp]
+	[identity]
 
 <bit-xor-exp> ::= <bit-xor-exp> BIT_XOR <bit-conjunction>
-	[ExtendBitXorExp]
+	[create_xor_op]
 <bit-xor-exp> ::= <bit-conjunction>
-	[BitXorExpFromBitConjunction]
+	[identity]
 
 <bit-conjunction> ::= <bit-conjunction> BIT_AND <bit-shift-exp>
-	[ExtendBitConjunction]
+	[create_and_op]
 <bit-conjunction> ::= <bit-shift-exp>
-	[BitConjunctionFromBitShiftExp]
+	[identity]
 
 <bit-shift-exp> ::= <bit-shift-exp> BIT_SHL <sum>
-	[ExtendBitSHL]
+	[create_shl_op]
 <bit-shift-exp> ::= <bit-shift-exp> BIT_SHR <sum>
-	[ExtendBitSHR]
+	[create_shr_op]
 <bit-shift-exp> ::= <bit-shift-exp> BIT_LSR <sum>
-	[ExtendBitLSR]
+	[create_lsr_op]
 <bit-shift-exp> ::= <sum>
-	[BitShiftExpFromSum]
+	[identity]
 
 <sum> ::= <sum> PLUS <product>
-	[SumFromPlusExp]
+	[create_plus_op]
 <sum> ::= <sum> MINUS <product>
-	[SumFromMinusExp]
+	[create_minus_op]
 <sum> ::= <product>
-	[SumFromProduct]
+	[identity]
 
-<product> ::= <product> TIMES <num-exp>
-	[ProductFromTimesExp]
-<product> ::= <product> DIV <num-exp>
-	[ProductFromDivExp]
-<product> ::= <product> MOD <num-exp>
-	[ProductFromModExp]
-<product> ::= <num-exp>
-	[ProductFromNumExp]
-
-<num-exp> ::= MINUS <num-value>
-	[Function]
-<num-exp> ::= NEG <num-value>
-	[Function]
-<num-exp> ::= <num-value>
-	[NumExpFromNumValue]
+<product> ::= <product> TIMES <num-value>
+	[create_times_op]
+<product> ::= <product> DIV <num-value>
+	[create_div_op]
+<product> ::= <product> MOD <num-value>
+	[create_mod_op]
+<product> ::= <num-value>
+	[identity]
 
 
 <num-value> ::= INT32
-	[NumValueFromINT32]
+	[identity]
 <num-value> ::= INT64
-	[Function]
+	[identity]
 <num-value> ::= REAL64
-	[Function]
+	[identity]
 <num-value> ::= <name>
-	[NumValueFromName]
+	[identity]
 <num-value> ::= <function-exp>
-	[Function]
+	[identity]
+<num-value> ::= PLUS <num-value>
+	[create_uplus_op]
+<num-value> ::= MINUS <num-value>
+	[create_uminus_op]
+<num-value> ::= NEG <num-value>
+	[create_neg_op]
 <num-value> ::= LPAREN <value> RPAREN
-	[CreateNestedNumValue]
+	[identity2]
 
 <name> ::= ID
-	[NameFromId]
+	[name_from_id]
 
 
