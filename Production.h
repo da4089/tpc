@@ -1,4 +1,4 @@
-/* $Id: Production.h,v 1.4 1999/02/08 19:44:30 phelps Exp $ */
+/* $Id: Production.h,v 1.5 1999/02/16 11:12:50 phelps Exp $ */
 
 #ifndef PRODUCTION_H
 #define PRODUCTION_H
@@ -10,7 +10,7 @@ typedef struct Production_t *Production;
 #include "List.h"
 
 /* Answers a new Production */
-Production Production_alloc(Nonterminal nonterminal, List components, int index);
+Production Production_alloc(int index, Nonterminal nonterminal, List components, char *function);
 
 /* Frees the resources consumed by a Production */
 void Production_free(Production self);
@@ -23,6 +23,9 @@ void Production_printWithOffset(Production self, FILE *out, int offset);
 
 /* Answers the receiver's index */
 int Production_getIndex(Production self);
+
+/* Answers the receiver's function */
+char *Production_getFunction(Production self);
 
 /* Answers the index of the receiver's Nonterminal */
 int Production_getNonterminalIndex(Production self);

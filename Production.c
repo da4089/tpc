@@ -1,7 +1,8 @@
-/* $Id: Production.c,v 1.5 1999/02/11 01:46:45 phelps Exp $ */
+/* $Id: Production.c,v 1.6 1999/02/16 11:12:36 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Production.h"
 
 struct Production_t
@@ -17,6 +18,9 @@ struct Production_t
 
     /* The receiver's components (the stuff on the right-hand side) */
     Component *components;
+
+    /* The receiver's reduction function */
+    char *function;
 };
 
 
@@ -40,7 +44,7 @@ void PopulateComponents(Component component, Production self, int *index)
  */
 
 /* Answers a new Production */
-Production Production_alloc(Nonterminal nonterminal, List components, int index)
+Production Production_alloc(int index, Nonterminal nonterminal, List components, char *function)
 {
     Production self;
     int i = 0;
@@ -56,6 +60,7 @@ Production Production_alloc(Nonterminal nonterminal, List components, int index)
     self -> nonterminal = nonterminal;
     self -> count = List_size(components);
     self -> components = (Component *) calloc(self -> count, sizeof(Component));
+    self -> function = strdup(function);
     List_doWithWith(components, PopulateComponents, self, &i);
 
     return self;
@@ -106,6 +111,13 @@ int Production_getIndex(Production self)
 {
     return self -> index;
 }
+
+/* Answers the receiver's function */
+char *Production_getFunction(Production self)
+{
+    return self -> function;
+}
+
 
 /* Answers the index of the receiver's Nonterminal */
 int Production_getNonterminalIndex(Production self)
