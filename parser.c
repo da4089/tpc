@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.2 1999/12/11 16:14:48 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.3 1999/12/11 16:58:19 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -37,6 +37,8 @@ static const char cvsid[] = "$Id: parser.c,v 1.2 1999/12/11 16:14:48 phelps Exp 
 #include <string.h>
 #include "parser.h"
 #include "component.h"
+#include "production.h"
+#include "grammar.h"
 
 typedef void *(*reduce_function_t )(parser_t self);
 
@@ -51,7 +53,7 @@ static void *make_nonterminal(parser_t self);
 static void *make_terminal(parser_t self);
 static void *make_function(parser_t self);
 
-#include "grammar.h"
+#include "pcg.h"
 
 #define INITIAL_BUFFER_SIZE 512
 #define INITIAL_STACK_SIZE 16
@@ -573,43 +575,71 @@ static void *accept_grammar(parser_t self)
 /* production-list ::= production-list production */
 static void *extend_production_list(parser_t self)
 {
-    printf("accept_production_list()\n");
-    exit(1);
+    grammar_t grammar = (grammar_t)self -> value_top[0];
+    production_t production = (production_t)self -> value_top[1];
+
+    grammar_add_production(grammar, production);
+    return grammar;
 }
 
 /* production-list ::= production */
 static void *make_production_list(parser_t self)
 {
-    printf("make_production_list()\n");
-    exit(1);
+    grammar_t grammar;
+    production_t production;
+
+    /* Allocate a grammar_t to hold the productions */
+    if ((grammar = grammar_alloc()) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Add the production to it */
+    production = (production_t)self -> value_top[0];
+    grammar_add_production(grammar, production);
+    return grammar;
 }
 
 /* production ::= nonterminal "DERIVES" exp-list function */
 static void *make_production(parser_t self)
 {
-    printf("make_production()\n");
-    exit(1);
+    component_t component = (component_t)self -> value_top[0];
+    production_t production = (production_t)self -> value_top[2];
+    char *function = (char *)self -> value_top[3];
+
+    production_set_nonterminal(production, component);
+    production_set_function(production, function);
+    production_print(production, stdout);
+    printf("\n");
+    return production;
 }
 
 /* exp-list ::= exp-list nonterminal */
 /* exp-list ::= exp-list terminal */
 static void *add_component(parser_t self)
 {
-    printf("add_component()\n");
-    exit(1);
+    production_t production = (production_t)self -> value_top[0];
+    component_t component = (component_t)self -> value_top[1];
+
+    production_add_component(production, component);
+    return production;
 }
 
 /* exp-list ::= nonterminal */
 /* exp-list ::= terminal */
 static void *make_exp_list(parser_t self)
 {
+    production_t production;
     component_t component;
 
+    if ((production = production_alloc(37)) == NULL)
+    {
+	return NULL;
+    }
+
     component = self -> value_top[0];
-    printf("make_exp_list(");
-    component_print(component, stdout);
-    printf(")\n");
-    exit(1);
+    production_add_component(production, component);
+    return production;
 }
 
 /* nonterminal ::= "ID" */
@@ -639,8 +669,7 @@ static void *make_terminal(parser_t self)
 /* function ::= "LBRACKET" "ID" "RBRACKET" */
 static void *make_function(parser_t self)
 {
-    printf("make_function()\n");
-    exit(1);
+    return self -> value_top[1];
 }
 
 
@@ -703,6 +732,16 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
 /* Releases the resources consumed by the receiver */
 void parser_free(parser_t self)
 {
+    if (self -> state_stack != NULL)
+    {
+	free(self -> state_stack);
+    }
+
+    if (self -> value_stack != NULL)
+    {
+	free(self -> value_stack);
+    }
+
     if (self -> token != NULL)
     {
 	free(self -> token);
