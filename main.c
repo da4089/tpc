@@ -27,11 +27,11 @@ static struct option long_options[] =
 /* Print the production rule */
 static void parser_cb(void *ignored, grammar_t grammar)
 {
-/*
     if (debug != NULL)
     {
-	Grammar_printKernels(grammar, stdout);
+	grammar_print_kernels(grammar, stdout);
     }
+/*
     else
     {
 	Grammar_printTable(grammar, stdout);
