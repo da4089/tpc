@@ -31,7 +31,7 @@
 #define PRODUCTION_H
 
 #ifndef lint
-static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.1 1999/12/11 16:58:49 phelps Exp $";
+static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.2 1999/12/13 02:25:26 phelps Exp $";
 #endif /* lint */
 
 /* The production type */
@@ -51,6 +51,16 @@ void production_add_component(production_t self, component_t component);
 
 /* Sets the receiver's function */
 void production_set_function(production_t self, char *function);
+
+
+/* Returns the production's left-hand side */
+component_t production_get_nonterminal(production_t self);
+
+/* Returns the production's index */
+int production_get_index(production_t self);
+
+/* Returns the nth component of the production's right-hand-side */
+component_t production_get_component(production_t self, int index);
 
 /* Pretty-prints the receiver */
 void production_print(production_t self, FILE *out);

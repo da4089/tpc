@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.2 1999/12/11 18:03:08 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.3 1999/12/13 02:25:25 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -121,6 +121,29 @@ void production_add_component(production_t self, component_t component)
 void production_set_function(production_t self, char *function)
 {
     self -> function = strdup(function);
+}
+
+/* Returns the production's index */
+int production_get_index(production_t self)
+{
+    return self -> index;
+}
+
+/* Returns the production's left-hand side */
+component_t production_get_nonterminal(production_t self)
+{
+    return self -> nonterminal;
+}
+
+/* Returns the nth component of the production's right-hand-side */
+component_t production_get_component(production_t self, int index)
+{
+    if (index < self -> count)
+    {
+	return self -> components[index];
+    }
+
+    return NULL;
 }
 
 /* Pretty-prints the receiver */
