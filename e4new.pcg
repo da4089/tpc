@@ -1,0 +1,221 @@
+<sub-exp> ::= <disjunction>
+	[function]
+
+<disjunction> ::= <disjunction> BOOL_OR <xor-exp>
+	[function]
+<disjunction> ::= <xor-exp>
+	[function]
+
+<xor-exp> ::= <xor-exp> BOOL_XOR <conjunction>
+	[function]
+<xor-exp> ::= <conjunction>
+	[function]
+
+<conjunction> ::= <conjunction> BOOL_AND <bool-exp>
+	[function]
+<conjunction> ::= <bool-exp>
+	[function]
+
+<bool-exp> ::= <value> <predicate> <value>
+	[function]
+<bool-exp> ::= <bool-function>
+	[function]
+<bool-exp> ::= BANG <bool-exp>
+	[function]
+<bool-exp> ::= LPAREN <disjunction> RPAREN
+	[function]
+
+<value> ::= STRING
+	[function]
+<value> ::= <value-function>
+	[function]
+<value> ::= <bit-disjunction>
+	[function]
+<value> ::= LPAREN <value> RPAREN
+	[function]
+
+<predicate> ::= EQ
+	[function]
+<predicate> ::= NEQ
+	[function]
+<predicate> ::= LT
+	[function]
+<predicate> ::= GT
+	[function]
+<predicate> ::= LE
+	[function]
+<predicate> ::= GE
+	[function]
+
+<bool-function> ::= EXISTS LPAREN <name> RPAREN
+	[function]
+<bool-function> ::= IS_INT32 LPAREN <name> RPAREN
+	[function]
+<bool-function> ::= IS_INT64 LPAREN <name> RPAREN
+	[function]
+<bool-function> ::= IS_NAN LPAREN <name> RPAREN
+	[function]
+<bool-function> ::= IS_STRING LPAREN <name> RPAREN
+	[function]
+<bool-function> ::= IS_OPAQUE LPAREN <name> RPAREN
+	[function]
+<bool-function> ::= EQUALS LPAREN <name> COMMA <arg-list> RPAREN
+	[function]
+<bool-function> ::= CONTAINS LPAREN <name> COMMA <arg-list> RPAREN
+	[function]
+<bool-function> ::= BEGINS_WITH LPAREN <name> COMMA <arg-list> RPAREN
+	[function]
+<bool-function> ::= ENDS_WITH LPAREN <name> COMMA <arg-list> RPAREN
+	[function]
+<bool-function> ::= WILDCARD LPAREN <name> COMMA <arg-list> RPAREN
+	[function]
+<bool-function> ::= REGEX LPAREN <name> COMMA <arg-list> RPAREN
+	[function]
+
+<value-function> ::= DECOMPOSE LPAREN <value> RPAREN
+	[function]
+<value-function> ::= DECOMP_COMPAT LPAREN <value> RPAREN
+	[function]
+<value-function> ::= PRIMARY LPAREN <value> RPAREN
+	[function]
+<value-function> ::= SECONDARY LPAREN <value> RPAREN
+	[function]
+<value-function> ::= TERTIARY LPAREN <value> RPAREN
+	[function]
+
+<bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>
+	[function]
+<bit-disjunction> ::= <bit-xor-exp>
+	[function]
+
+<bit-xor-exp> ::= <bit-xor-exp> BIT_XOR <bit-conjunction>
+	[function]
+<bit-xor-exp> ::= <bit-conjunction>
+	[function]
+
+<bit-conjunction> ::= <bit-conjunction> BIT_AND <bit-shift-exp>
+	[function]
+<bit-conjunction> ::= <bit-shift-exp>
+	[function]
+
+<bit-shift-exp> ::= <bit-shift-exp> BIT_SHL <sum>
+	[function]
+<bit-shift-exp> ::= <bit-shift-exp> BIT_SHR <sum>
+	[function]
+<bit-shift-exp> ::= <bit-shift-exp> BIT_LSR <sum>
+	[function]
+
+<sum> ::= <sum> PLUS <product>
+	[function]
+<sum> ::= <sum> MINUS <product>
+	[function]
+<sum> ::= <product>
+	[function]
+
+<product> ::= <product> TIMES <num-exp>
+	[function]
+<product> ::= <product> DIV <num-exp>
+	[function]
+<product> ::= <product> MOD <num-exp>
+	[function]
+<product> ::= <num-exp>
+	[function]
+
+<num-exp> ::= <num-value>
+	[function]
+<num-exp> ::= MINUS <num-value>
+	[function]
+<num-exp> ::= NEG <num-value>
+	[function]
+
+<num-value> ::= INT32
+	[function]
+<num-value> ::= INT64
+	[function]
+<num-value> ::= REAL64
+	[function]
+<num-value> ::= <name>
+	[function]
+<num-value> ::= LPAREN <bit-disjunction> RPAREN
+	[function]
+
+<name> ::= ID
+	[function]
+<name> ::= EQ
+	[function]
+<name> ::= NEQ
+	[function]
+<name> ::= LT
+	[function]
+<name> ::= GT
+	[function]
+<name> ::= GE
+	[function]
+<name> ::= LE
+	[function]
+<name> ::= BOOL_OR
+	[function]
+<name> ::= BOOL_XOR
+	[function]
+<name> ::= BOOL_AND
+	[function]
+<name> ::= BIT_OR
+	[function]
+<name> ::= BIT_XOR
+	[function]
+<name> ::= BIT_AND
+	[function]
+<name> ::= BIT_SHL
+	[function]
+<name> ::= BIT_SHR
+	[function]
+<name> ::= BIT_LSR
+	[function]
+<name> ::= PLUS
+	[function]
+<name> ::= MOD
+	[function]
+<name> ::= TIMES
+	[function]
+<name> ::= DIV
+	[function]
+<name> ::= EXISTS
+	[function]
+<name> ::= IS_INT32
+	[function]
+<name> ::= IS_INT64
+	[function]
+<name> ::= IS_NAN
+	[function]
+<name> ::= IS_STRING
+	[function]
+<name> ::= IS_OPAQUE
+	[function]
+<name> ::= EQUALS
+	[function]
+<name> ::= CONTAINS
+	[function]
+<name> ::= BEGINS_WITH
+	[function]
+<name> ::= ENDS_WITH
+	[function]
+<name> ::= WILDCARD
+	[function]
+<name> ::= REGEX
+	[function]
+<name> ::= DECOMPOSE
+	[function]
+<name> ::= DECOMP_COMPAT
+	[function]
+<name> ::= PRIMARY
+	[function]
+<name> ::= SECONDARY
+	[function]
+<name> ::= TERTIARY
+	[function]
+
+
+<arg-list> ::= <arg-list> COMMA <value>
+	[function]
+<arg-list> ::= <value>
+	[function]
