@@ -1,4 +1,4 @@
-/* $Id: Lexer.c,v 1.4 1999/02/08 12:02:16 phelps Exp $ */
+/* $Id: Lexer.c,v 1.5 1999/02/16 08:38:50 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -162,7 +162,7 @@ static void AcceptNonterminal(Lexer self, int ch)
 /* Read the next character of a terminal */
 static void ReadTerminal(Lexer self, int ch)
 {
-    if ((ch == '_') || (ch == '-') || isalpha(ch) || isdigit(ch))
+    if ((ch == '_') || isalpha(ch) || isdigit(ch))
     {
 	StringBuffer_appendChar(self -> buffer, ch);
 	self -> state = 7;
