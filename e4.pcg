@@ -1,87 +1,87 @@
 <sub-exp> ::= <or-exp-list> .
 
-<or-exp-list> ::= <or-exp-list> bool-or <xor-exp-list> .
+<or-exp-list> ::= <or-exp-list> BOOL_OR <xor-exp-list> .
 <or-exp-list> ::= <xor-exp-list> .
 
-<xor-exp-list> ::= <xor-exp-list> bool-xor <and-exp-list> .
+<xor-exp-list> ::= <xor-exp-list> BOOL_XOR <and-exp-list> .
 <xor-exp-list> ::= <and-exp-list> .
 
-<and-exp-list> ::= <and-exp-list> bool-and <bool-exp> .
+<and-exp-list> ::= <and-exp-list> BOOL_AND <bool-exp> .
 <and-exp-list> ::= <bool-exp> .
 
 <bool-exp> ::= <value> .
 <bool-exp> ::= <value> <predicate> <value> .
-<bool-exp> ::= bang <bool-exp> .
+<bool-exp> ::= BANG <bool-exp> .
 
-<value> ::= string .
+<value> ::= STRING .
 <value> ::= <bit-or-exp-list> .
 
-<predicate> ::= eq .
-<predicate> ::= neq .
-<predicate> ::= lt .
-<predicate> ::= gt .
-<predicate> ::= le .
-<predicate> ::= ge .
+<predicate> ::= EQ .
+<predicate> ::= NEQ .
+<predicate> ::= LT .
+<predicate> ::= GT .
+<predicate> ::= LE .
+<predicate> ::= GE .
 
-<bit-or-exp-list> ::= <bit-or-exp-list> bit-or <bit-xor-exp-list> .
+<bit-or-exp-list> ::= <bit-or-exp-list> BIT_OR <bit-xor-exp-list> .
 <bit-or-exp-list> ::= <bit-xor-exp-list> .
 
-<bit-xor-exp-list> ::= <bit-xor-exp-list> bit-xor <bit-and-exp-list> .
+<bit-xor-exp-list> ::= <bit-xor-exp-list> BIT_XOR <bit-and-exp-list> .
 <bit-xor-exp-list> ::= <bit-and-exp-list> .
 
-<bit-and-exp-list> ::= <bit-and-exp-list> bit-and <bit-shift-exp-list> .
+<bit-and-exp-list> ::= <bit-and-exp-list> BIT_AND <bit-shift-exp-list> .
 <bit-and-exp-list> ::= <bit-shift-exp-list> .
 
-<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shl <sum-list> .
-<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-shr <sum-list> .
-<bit-shift-exp-list> ::= <bit-shift-exp-list> bit-lsr <sum-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHL <sum-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHR <sum-list> .
+<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_LSR <sum-list> .
 <bit-shift-exp-list> ::= <sum-list> .
 
-<sum-list> ::= <sum-list> plus <product-list> .
-<sum-list> ::= <sum-list> minus <product-list> .
+<sum-list> ::= <sum-list> PLUS <product-list> .
+<sum-list> ::= <sum-list> MINUS <product-list> .
 <sum-list> ::= <product-list> .
 
-<product-list> ::= <product-list> times <num-exp> .
-<product-list> ::= <product-list> div <num-exp> .
-<product-list> ::= <product-list> mod <num-exp> .
+<product-list> ::= <product-list> TIMES <num-exp> .
+<product-list> ::= <product-list> DIV <num-exp> .
+<product-list> ::= <product-list> MOD <num-exp> .
 <product-list> ::= <num-exp> .
 
 <num-exp> ::= <num-value> .
-<num-exp> ::= minus <num-value> .
-<num-exp> ::= neg <num-value> .
+<num-exp> ::= MINUS <num-value> .
+<num-exp> ::= NEG <num-value> .
 
-<num-value> ::= int32 .
-<num-value> ::= int64 .
-<num-value> ::= real64 .
+<num-value> ::= INT32 .
+<num-value> ::= INT64 .
+<num-value> ::= REAL64 .
 <num-value> ::= <name> .
 <num-value> ::= <function> .
-<num-value> ::= lparen <bit-or-exp-list> rparen .
+<num-value> ::= LPAREN <bit-or-exp-list> RPAREN .
 
-<name> ::= id .
-<name> ::= eq .
-<name> ::= neq .
-<name> ::= lt .
-<name> ::= gt .
-<name> ::= ge .
-<name> ::= le .
-<name> ::= bool-or .
-<name> ::= bool-xor .
-<name> ::= bool-and .
-<name> ::= bit-or .
-<name> ::= bit-xor .
-<name> ::= bit-and .
-<name> ::= bit-shl .
-<name> ::= bit-shr .
-<name> ::= bit-lsr .
-<name> ::= plus .
-<name> ::= mod .
-<name> ::= times .
-<name> ::= div .
+<name> ::= ID .
+<name> ::= EQ .
+<name> ::= NEQ .
+<name> ::= LT .
+<name> ::= GT .
+<name> ::= GE .
+<name> ::= LE .
+<name> ::= BOOL_OR .
+<name> ::= BOOL_XOR .
+<name> ::= BOOL_AND .
+<name> ::= BIT_OR .
+<name> ::= BIT_XOR .
+<name> ::= BIT_AND .
+<name> ::= BIT_SHL .
+<name> ::= BIT_SHR .
+<name> ::= BIT_LSR .
+<name> ::= PLUS .
+<name> ::= MOD .
+<name> ::= TIMES .
+<name> ::= DIV .
 
-<function> ::= <function-name> lparen rparen .
-<function> ::= <function-name> lparen <arg-list> rparen .
+<function> ::= <function-name> LPAREN RPAREN .
+<function> ::= <function-name> LPAREN <arg-list> RPAREN .
 
-<function-name> ::= id .
+<function-name> ::= ID .
 
-<arg-list> ::= <arg-list> comma <value> .
+<arg-list> ::= <arg-list> COMMA <value> .
 <arg-list> ::= <value> .
