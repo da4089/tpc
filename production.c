@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.4 1999/12/13 03:59:53 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.5 1999/12/13 04:19:20 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -114,10 +114,10 @@ int production_get_index(production_t self)
     return self -> index;
 }
 
-/* Returns the production's left-hand side */
-component_t production_get_nonterminal(production_t self)
+/* Returns the nonterminal index of the production's left-hand side */
+int production_get_nonterminal_index(production_t self)
 {
-    return self -> nonterminal;
+    return component_get_index(self -> nonterminal);
 }
 
 /* Returns the nth component of the production's right-hand-side */

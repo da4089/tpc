@@ -31,7 +31,7 @@
 #define PRODUCTION_H
 
 #ifndef lint
-static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.3 1999/12/13 03:59:54 phelps Exp $";
+static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.4 1999/12/13 04:19:21 phelps Exp $";
 #endif /* lint */
 
 /* The production type */
@@ -49,8 +49,8 @@ production_t production_alloc(
 void production_free(production_t self);
 
 
-/* Returns the production's left-hand side */
-component_t production_get_nonterminal(production_t self);
+/* Returns the nonterminal index of the production's left-hand side */
+int production_get_nonterminal_index(production_t self);
 
 /* Returns the production's index */
 int production_get_index(production_t self);
