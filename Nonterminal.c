@@ -1,4 +1,4 @@
-/* $Id: Nonterminal.c,v 1.3 1999/02/11 01:46:12 phelps Exp $ */
+/* $Id: Nonterminal.c,v 1.4 1999/02/11 04:07:53 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,8 +34,7 @@ static int True(Nonterminal self)
 /* Marks the terminals which can appear as the first element of the receiver */
 static void MarkFirst(Nonterminal self, Grammar grammar, char *table)
 {
-    printf("*** MarkFirst(Nonterminal, Grammar, char *) not implemented!\n");
-    exit(1);
+    Grammar_markFirst(grammar, self, table);
 }
 
 /* The method table */
