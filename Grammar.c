@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.20 1999/02/15 13:36:45 phelps Exp $ */
+/* $Id: Grammar.c,v 1.21 1999/02/16 07:03:11 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -290,6 +290,100 @@ void ComputeLALRStates(Grammar self)
     }
 }
 
+/* Prints the production_type table */
+static void PrintProductionTypeTable(Grammar self, FILE *out)
+{
+    int index;
+
+    /* Print the table header */
+    fprintf(out, "static int production_type[%d] =\n{\n", self -> production_count);
+
+    /* Print the type of the production's nonterminal and the production in a comment */
+    for (index = 0; index < self -> production_count; index++)
+    {
+	Production production = self -> productions[index];
+	fprintf(out, "    %d, /* ", Production_getNonterminalIndex(production));
+	Production_print(production, out);
+	fputs("*/\n", out);
+    }
+
+    /* Close the table */
+    fputs("};\n\n", out);
+}
+
+/* Prints out the Shift/Reduce table */
+static void PrintShiftReduceTable(Grammar self, FILE *out)
+{
+    int index;
+
+    /* Print out some #defines to make all of this work */
+    fputs("#define ERR 0\n", out);
+    fputs("#define R(x) (x)\n", out);
+    fprintf(out, "#define S(x) (x + %d)\n\n", self -> production_count);
+
+    /* Print the SR table header */
+    fprintf(out, "static int sr_table[%d][%d] =\n{\n",
+	    self -> kernel_count, self -> terminal_count);
+
+    /* Go through each kernel and print out its part of the SR table */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_printSRTableEntry(self -> kernels[index], out);
+    }
+
+    /* Close off the SR table */
+    fputs("};\n\n", out);
+
+    /* Undefine our macros */
+    fputs("#undef ERR\n", out);
+    fputs("#undef R\n", out);
+    fputs("#undef S\n\n", out);
+}
+
+/* Prints out the goto table */
+static void PrintGotoTable(Grammar self, FILE *out)
+{
+    int index;
+
+    /* Print the goto table header */
+    fprintf(out, "static int goto_table[%d][%d] = \n{\n",
+	    self -> kernel_count, self -> nonterminal_count);
+    
+    /* Go through each kernel and print its portion of the goto table */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_printGotoTableEntry(self -> kernels[index], out);
+    }
+
+    /* Close off the goto table */
+    fputs("};\n\n", out);
+}
+
+/* Prints out the ShiftReduce function */
+static void PrintShiftReduceFunction(Grammar self, FILE *out)
+{
+    /* Define a function to deal with next input token */
+    fputs("static void ShiftReduce(int ttype, void *tdata, void *rock)\n{\n", out);
+    fputs("    int action;\n\n", out);
+    fprintf(out, "    while ((action = sr_table[Top(rock)][ttype]) < %d)\n    {\n",
+	    self -> production_count);
+    fputs("\tint reduction;\n", out);
+    fputs("\tint state;\n\n", out);
+    fputs("\tif (action == 0)\n\t{\n", out);
+    fputs("\t    Error(rock, ttype, tdata);\n", out);
+    fputs("\t    return;\n\t}\n\n", out);
+    fprintf(out, "\treduction = action / %d;\n", self -> production_count);
+    fputs("\tstate = goto_table[Top(rock)][production_type[reduction]];\n", out);
+    fputs("\tReduce(rock, reduction, state);\n", out);
+    fputs("    }\n\n", out);
+    fputs("    if ((ttype == 0) && (Top(rock) == 1))\n    {\n", out);
+    fputs("\tAccept(rock);\n", out);
+    fputs("    }\n\n", out);
+    fprintf(out, "    Shift(rock, ttype, tdata, action %% %d);\n", self -> production_count);
+    fputs("}\n\n", out);
+}
+
+
 /*
  *
  * Exported functions
@@ -337,10 +431,10 @@ void Grammar_free(Grammar self)
 
     for (index = 0; index < self -> production_count; index++)
     {
-/*	Production_free(self -> productions[index]);*/
+	Production_free(self -> productions[index]);
     }
 
-/*    free(self);*/
+    free(self);
 }
 
 /* Pretty-prints the receiver */
@@ -555,34 +649,11 @@ void Grammar_printKernels(Grammar self, FILE *out)
 /* Print out a parse table */
 void Grammar_printTable(Grammar self, FILE *out)
 {
-    int index;
-
     /* Compute the LALR states */
     ComputeLALRStates(self);
 
-    /* Print the SR table header */
-    fprintf(out, "int sr_table[%d][%d] =\n{\n", self -> terminal_count, self -> kernel_count);
-
-    /* Go through each kernel and print out its part of the SR table */
-    for (index = 0; index < self -> kernel_count; index++)
-    {
-	Kernel_printSRTableEntry(self -> kernels[index], out);
-    }
-
-    /* Close off the SR table */
-    fputs("}\n", out);
-
-
-
-    /* Print the goto table header */
-    fprintf(out, "int goto_table[%d][%d] = \n{\n", self -> nonterminal_count, self -> kernel_count);
-    
-    /* Go through each kernel and print its portion of the goto table */
-    for (index = 0; index < self -> kernel_count; index++)
-    {
-	Kernel_printGotoTableEntry(self -> kernels[index], out);
-    }
-
-    /* Close off the goto table */
-    fputs("}\n", out);
+    PrintProductionTypeTable(self, out);
+    PrintShiftReduceTable(self, out);
+    PrintGotoTable(self, out);
+    PrintShiftReduceFunction(self, out);
 }
