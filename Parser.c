@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.7 1999/02/11 07:39:27 phelps Exp $ */
+/* $Id: Parser.c,v 1.8 1999/02/11 07:57:04 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -423,7 +423,7 @@ void Parser_acceptEOF(Parser self)
     /* Copy the nonterminals out of the Hashtable and into the array */
     nonterminals=(Nonterminal *) calloc(Hashtable_size(self -> nonterminals), sizeof(Nonterminal));
     Hashtable_keysAndValuesDoWith(self -> nonterminals, DecodeNonterminal, nonterminals);
-    terminals = (Terminal *) calloc(Hashtable_size(self -> terminals), sizeof(Terminal));
+    terminals = (Terminal *) calloc(Hashtable_size(self -> terminals) + 1, sizeof(Terminal));
     Hashtable_keysAndValuesDoWith(self -> terminals, DecodeTerminal, terminals);
 
     grammar = Grammar_alloc(
