@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.9 1999/02/11 01:48:39 phelps Exp $ */
+/* $Id: Grammar.c,v 1.10 1999/02/11 04:07:15 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +70,36 @@ static void MarkGenerates(Grammar self, int x, int y)
 	    if (self -> generates[y][i] != 0)
 	    {
 		MarkGenerates(self, x, i);
+	    }
+	}
+    }
+}
+
+/* Marks the first terminals of a given non-terminal in the table */
+static void MarkFirst(Grammar self, Nonterminal nonterminal, char *table, char *tried)
+{
+    List list;
+    int index;
+
+    list = self -> productionsByNonterminal[Nonterminal_getIndex(nonterminal)];
+    for (index = 0; index < List_size(list); index++)
+    {
+	Production production = List_get(list, index);
+
+	if (! tried[Production_getIndex(production)])
+	{
+	    Component component;
+
+	    tried[Production_getIndex(production)] = 1;
+	    component = Production_getFirstComponent(production);
+
+	    if (Component_isNonterminal(component))
+	    {
+		MarkFirst(self, (Nonterminal)component, table, tried);
+	    }
+	    else
+	    {
+		table[Terminal_getIndex((Terminal)component)] = 1;
 	    }
 	}
     }
@@ -369,6 +399,12 @@ void Grammar_computeClosure(
     }
 }
 
+/* Marks the first terminals of a given non-terminal in the table */
+void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table)
+{
+    char *productions = (char *)alloca(self -> production_count * sizeof(char));
+    MarkFirst(self, nonterminal, table, productions);
+}
 
 /* Construct the set of LR(0) states */
 void Grammar_getLR0States(Grammar self)

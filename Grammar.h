@@ -1,4 +1,4 @@
-/* $Id: Grammar.h,v 1.5 1999/02/11 01:48:39 phelps Exp $
+/* $Id: Grammar.h,v 1.6 1999/02/11 04:07:39 phelps Exp $
  *
  * A Grammar is a collection of Productions which, together with a
  * starting non-terminal, construe a language.  The Grammar can be
@@ -13,6 +13,7 @@ typedef struct Grammar_t *Grammar;
 
 #include "List.h"
 #include "Production.h"
+#include "Nonterminal.h"
 
 /* Allocates a new Grammar with the given Productions */
 Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_count);
@@ -41,6 +42,9 @@ int Grammar_encode(Grammar self, Production production, int offset);
 
 /* Answers the Production and offset encoded in the integer */
 int Grammar_decode(Grammar self, int number, Production *production_return);
+
+/* Marks the first terminals of a given non-terminal in the table */
+void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table);
 
 /* Construct the set of LR(0) states */
 void Grammar_getLR0States(Grammar self);
