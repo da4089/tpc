@@ -3,6 +3,9 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "component.h"
+#include "production.h"
+#include "grammar.h"
 #include "parser.h"
 
 #define BUFFER_SIZE 4096
@@ -21,10 +24,10 @@ static struct option long_options[] =
     { NULL, no_argument, NULL, '\0' }
 };
 
-#if 0
 /* Print the production rule */
-static void Callback(void *debug, Grammar grammar)
+static void parser_cb(void *ignored, grammar_t grammar)
 {
+/*
     if (debug != NULL)
     {
 	Grammar_printKernels(grammar, stdout);
@@ -33,8 +36,9 @@ static void Callback(void *debug, Grammar grammar)
     {
 	Grammar_printTable(grammar, stdout);
     }
+*/
+    grammar_print(grammar, stdout);
 }
-#endif
 
 /* Prints out the usage message */
 static void usage(int argc, char *argv[])
@@ -110,7 +114,7 @@ int main(int argc, char *argv[])
     }
     
     /* Create the parser */
-    if ((parser = parser_alloc(NULL, NULL)) == NULL)
+    if ((parser = parser_alloc(parser_cb, NULL)) == NULL)
     {
 	perror("parser_alloc(): failed");
 	exit(1);
