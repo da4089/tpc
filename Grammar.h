@@ -1,4 +1,4 @@
-/* $Id: Grammar.h,v 1.4 1999/02/08 23:18:27 phelps Exp $
+/* $Id: Grammar.h,v 1.5 1999/02/11 01:48:39 phelps Exp $
  *
  * A Grammar is a collection of Productions which, together with a
  * starting non-terminal, construe a language.  The Grammar can be
@@ -29,6 +29,9 @@ int Grammar_nonterminalCount(Grammar self);
 /* Answers the number of terminals in the receiver */
 int Grammar_terminalCount(Grammar self);
 
+/* Answers the number of productions in the receiver */
+int Grammar_productionCount(Grammar self);
+
 /* Computes the contribute of the encoded production/offset (and
  * derived productions) to the goto table */
 void Grammar_computeGoto(Grammar self, List *table, int number);
@@ -41,5 +44,15 @@ int Grammar_decode(Grammar self, int number, Production *production_return);
 
 /* Construct the set of LR(0) states */
 void Grammar_getLR0States(Grammar self);
+
+/* Updates the follows table to indicate that component may
+ * be followed by the follows Component.  If follows is NULL, then the 
+ * follows information is copied from the source table */
+void Grammar_computeClosure(
+    Grammar self,
+    Component component,
+    Component follows,
+    char *source,
+    char *table);
 
 #endif /* GRAMMAR_H */

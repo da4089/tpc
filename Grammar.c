@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.8 1999/02/08 23:45:14 phelps Exp $ */
+/* $Id: Grammar.c,v 1.9 1999/02/11 01:48:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -229,6 +229,29 @@ int Grammar_terminalCount(Grammar self)
     return self -> terminal_count;
 }
 
+/* Answers the number of productions in the receiver */
+int Grammar_productionCount(Grammar self)
+{
+    return self -> production_count;
+}
+
+
+
+/* Encodes a Production and offset in a single integer that sorts nicely */
+int Grammar_encode(Grammar self, Production production, int offset)
+{
+    int count = self -> production_count;
+    return (Production_getIndex(production) + 1) - (count * (offset + 1));
+}
+
+/* Answers the Production and offset encoded in the integer */
+int Grammar_decode(Grammar self, int number, Production *production_return)
+{
+    int count = self -> production_count;
+    *production_return = self -> productions[count + number % count - 1];
+    return - (number / count);
+}
+
 
 /* Computes the contribute of the encoded production/offset (and
  * derived productions) to the goto table */
@@ -263,21 +286,89 @@ void Grammar_computeGoto(Grammar self, List *table, int number)
     }
 }
 
-
-/* Encodes a Production and offset in a single integer that sorts nicely */
-int Grammar_encode(Grammar self, Production production, int offset)
+/* Updates the follows table to indicate that component may
+ * be followed by the follows Component.  If follows is NULL, then the 
+ * follows information is copied from the source table */
+void Grammar_computeClosure(
+    Grammar self,
+    Component component,
+    Component follows,
+    char *source,
+    char *table)
 {
-    int count = self -> production_count;
-    return (Production_getIndex(production) + 1) - (count * (offset + 1));
+    Nonterminal nonterminal;
+    char *begin;
+    char *end;
+    List list;
+    int index;
+
+    /* If component is a terminal then we don't have to do anything */
+    if (! Component_isNonterminal(component))
+    {
+	return;
+    }
+
+    nonterminal = (Nonterminal)component;
+
+    /* If we have a follows component, then get its follows information */
+    if (follows != NULL)
+    {
+	int length = sizeof(char) * (self -> terminal_count + 1);
+	begin = (char *)alloca(length);
+	memset(begin, 0, length);
+
+	Component_markFirst(follows, self, begin);
+    }
+    /* Otherwise copy from elsewhere in the table */
+    else
+    {
+	begin = source;
+    }
+
+    end = begin + self -> terminal_count + 1;
+
+    /* Go through each of the productions corresponding to the
+     * component and update its follows set */
+    list = self -> productionsByNonterminal[Nonterminal_getIndex(nonterminal)];
+    for (index = 0; index < List_size(list); index++)
+    {
+	char *in;
+	char *out;
+	char *dest;
+
+	int isDone = 1;
+	Production production = (Production) List_get(list, index);
+	dest = table + Production_getIndex(production) * (self -> terminal_count + 1);
+	out = dest;
+
+	/* Copy the elements and notice if we've set a new one */
+	for (in = begin; in < end; in++)
+	{
+	    if ((*in != 0) && (*out == 0))
+	    {
+		*out = *in;
+		isDone = 0;
+	    }
+
+	    out++;
+	}
+
+	/* If we haven't changed anything, then our work here is done */
+	if (isDone)
+	{
+	    return;
+	}
+
+	/* If we've changed anything, then recurse for the current production */
+	Grammar_computeClosure(
+	    self, 
+	    Production_getFirstComponent(production),
+	    Production_getComponent(production, 1),
+	    dest,
+	    table);
+    }
 }
 
-/* Answers the Production and offset encoded in the integer */
-int Grammar_decode(Grammar self, int number, Production *production_return)
-{
-    int count = self -> production_count;
-    *production_return = self -> productions[count + number % count - 1];
-    return - (number / count);
-}
 
 /* Construct the set of LR(0) states */
 void Grammar_getLR0States(Grammar self)
@@ -321,5 +412,8 @@ void Grammar_getLR0States(Grammar self)
 	}
     }
 
+    List_free(queue);
+
     printf("%ld states\n", List_size(list));
+    Kernel_computeClosure((Kernel) List_first(list));
 }

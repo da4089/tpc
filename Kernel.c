@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.3 1999/02/08 20:38:17 phelps Exp $ */
+/* $Id: Kernel.c,v 1.4 1999/02/11 01:48:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -194,3 +194,44 @@ Kernel *Kernel_getGotoTable(Kernel self)
     return result;
 }
 
+/* Computes the closure of the receiver */
+void Kernel_computeClosure(Kernel self)
+{
+    /* Add a fake production for the kernel sets and a fake terminal 
+     * for determining propagation */
+    int production_count = Grammar_productionCount(self -> grammar);
+    int terminal_count = Grammar_terminalCount(self -> grammar);
+    char *table = (char *)calloc((production_count + 1) * (terminal_count + 1), sizeof(char));
+    int index;
+
+    /* Flag the propagation terminal on the fake production */
+    table[(production_count + 1) * (terminal_count + 1) - 1] = 1;
+
+    /* Go through the kernel items and use them to compute the closure */
+    for (index = 0; index < self -> count; index++)
+    {
+	Production production;
+	int offset;
+
+	offset = Grammar_decode(self -> grammar, self -> pairs[index], &production);
+	Grammar_computeClosure(
+	    self -> grammar,
+	    Production_getComponent(production, offset),
+	    Production_getComponent(production, offset + 1),
+	    table + production_count * (terminal_count + 1),
+	    table);
+    }
+
+    /* Print out the table */
+    for (index = 0; index <= production_count; index++)
+    {
+	int j;
+
+	printf("\n%d: ", index);
+	for (j = 0; j <= terminal_count; j++)
+	{
+	    printf("%d ", table[index * (terminal_count + 1) + j]);
+	}
+    }
+    printf("\n");
+}

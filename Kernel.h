@@ -1,4 +1,4 @@
-/* $Id: Kernel.h,v 1.3 1999/02/08 20:38:18 phelps Exp $
+/* $Id: Kernel.h,v 1.4 1999/02/11 01:48:39 phelps Exp $
  *
  * A Kernel represents the Productions of a parser state which can't
  * be derived from the other productions in the kernel
@@ -26,6 +26,8 @@ int Kernel_equals(Kernel self, Kernel kernel);
 /* Answers the receiver's GotoTable */
 Kernel *Kernel_getGotoTable(Kernel self);
 
+/* Computes the receiver's closure */
+void Kernel_computeClosure(Kernel self);
 
 
 #endif /* KERNEL_H */
