@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.9 1999/02/12 06:06:22 phelps Exp $ */
+/* $Id: Kernel.c,v 1.10 1999/02/12 07:18:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +17,7 @@ struct Kernel_t
     Kernel *goto_table;
 
     /* The propagates tables of the kernel items */
-    int *propagates;
+    char *propagates;
 
     /* The follows table */
     char *follows;
@@ -53,6 +53,7 @@ Kernel Alloc(Grammar grammar, int count)
     self -> index = 0;
     self -> goto_table = NULL;
     self -> propagates = NULL;
+    self -> follows = NULL;
     self -> count = count;
 
     /* IT'S UP TO THE CALLER TO INITIALIZE THE PAIRS */
@@ -100,6 +101,14 @@ static Kernel GetGotoKernel(Kernel self, Production production, int offset)
 {
     int index;
     Component component = Production_getComponent(production, offset);
+
+    /* If there is no such component, then bail */
+    if (component == NULL)
+    {
+	return NULL;
+    }
+
+    /* Otherwise look it up */
     if (Component_isNonterminal(component))
     {
 	index = Nonterminal_getIndex((Nonterminal)component);
@@ -118,7 +127,7 @@ static void PropagateDerived(
     Kernel self,
     Nonterminal nonterminal,
     Terminal terminal,
-    List propagates,
+    char *propagates,
     char *table);
 
 /* Propagate follows info for the given production, offset and follows info */
@@ -127,7 +136,7 @@ static void PropagatePrepare(
     Production production,
     int offset,
     Terminal terminal,
-    List propagates,
+    char *propagates,
     char *table)
 {
     int destination;
@@ -146,13 +155,19 @@ static void PropagatePrepare(
     /* Are we doing propagation stuff? */
     if (terminal == NULL)
     {
-	/* See if we've already done this production */
-	if (List_includes(propagates, (void *)destination))
+	/* Kernel items are implicit and shouldn't be recorded */
+	if (offset == 0)
 	{
-	    return;
-	}
+	    /* See if we've already done this production */
+	    char *pointer = propagates + Production_getIndex(production);
+	    if (*pointer != 0)
+	    {
+		return;
+	    }
 
-	List_addLast(propagates, (void *)destination);
+	    /* Nope -- mark it so that we don't do it again though */
+	    *pointer = 1;
+	}
     }
     /* Otherwise we've got a spontaneously generated terminal */
     else
@@ -228,7 +243,7 @@ static void PropagateDerived(
     Kernel self,
     Nonterminal nonterminal,
     Terminal terminal,
-    List propagates,
+    char *propagates,
     char *table)
 {
     List list = Grammar_getDerivedProductions(self -> grammar, nonterminal);
@@ -240,6 +255,32 @@ static void PropagateDerived(
 	PropagatePrepare(self, (Production)List_get(list, index), 0, terminal, propagates, table);
     }
 }
+
+/* Propagate the follows information from the pair to its derived kernels */
+void PropagateFollows(Kernel self, int index, Terminal terminal, int *isDone)
+{
+    int pair = self -> pairs[index];
+    Production production;
+    int offset;
+    int destination;
+
+    /* Look up our production and offset */
+    offset = Grammar_decode(self -> grammar, pair, &production);
+
+    /* Propagate to the kernel item's production's next position if one exists */
+    if (offset + 1 < Production_getCount(production))
+    {
+	destination = Grammar_encode(self -> grammar, production, offset + 1);
+	Kernel_addFollowsTerminal(
+	    GetGotoKernel(self, production, offset),
+	    destination,
+	    terminal);
+    }
+
+    /* Go through the propagates table and propagate to those items too */
+    
+}
+
 
 /* Prints out the follows set for the indexed pair */
 static void PrintFollowsSet(Kernel self, int index, FILE *out)
@@ -446,6 +487,10 @@ void Kernel_propagatePrepare(Kernel self)
     /* Use the canonical version of the kernels in the goto table */
     Grammar_resolveKernels(self -> grammar, self -> goto_table);
 
+    /* Construct the receiver's propagates table */
+    self -> propagates = calloc(
+	self -> count * Grammar_productionCount(self -> grammar), sizeof(char));
+
     /* Construct a table */
     length = Grammar_productionCount(self -> grammar) * 
 	Grammar_terminalCount(self -> grammar) *
@@ -458,7 +503,8 @@ void Kernel_propagatePrepare(Kernel self)
      * kernel/pairs */
     for (index = 0; index < self -> count; index++)
     {
-	List propagates = List_alloc();
+	char *propagates = self -> propagates + 
+	    (index * Grammar_productionCount(self -> grammar));
 	Production production;
 	int offset;
 
@@ -471,6 +517,34 @@ void Kernel_propagatePrepare(Kernel self)
 /* Propagate follows information from this kernel to the ones it derives */
 void Kernel_propagateFollows(Kernel self, int *isDone)
 {
+    int count;
+    char *pointer;
+    int i;
+    int j;
+
+    /* Nothing to propagate yet! */
+    if (self -> follows == NULL)
+    {
+	return;
+    }
+
+    count = Grammar_terminalCount(self -> grammar);
+    pointer = self -> follows;
+
+    /* Go through each kernel item */
+    for (i = 0; i < self -> count; i++)
+    {
+	/* Go through each terminal symbol for that item */
+	for (j = 0; j < count; j++)
+	{
+	    /* See if that terminal is in the follows set */
+	    if (*(pointer++) != 0)
+	    {
+		Terminal terminal = Grammar_getTerminal(self -> grammar, j);
+		PropagateFollows(self, i, terminal, isDone);
+	    }
+	}
+    }
 }
 
 
