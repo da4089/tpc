@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.30 1999/02/17 00:55:37 phelps Exp $ */
+/* $Id: Grammar.c,v 1.31 1999/02/17 12:38:26 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -378,7 +378,7 @@ static void PrintShiftReduceTable(Grammar self, FILE *out)
     fprintf(out, "#define S(x) (x + %d)\n\n", self -> production_count);
 
     /* Print the SR table header */
-    fprintf(out, "static %s sr_table[%d][%d] =\n{\n",
+    fprintf(out, "static unsigned %s sr_table[%d][%d] =\n{\n",
 	    max < 256 ? "char" : "int",
 	    self -> kernel_count,
 	    self -> terminal_count);
@@ -404,7 +404,7 @@ static void PrintGotoTable(Grammar self, FILE *out)
     int index;
 
     /* Print the goto table header */
-    fprintf(out, "static %s goto_table[%d][%d] = \n{\n",
+    fprintf(out, "static unsigned %s goto_table[%d][%d] = \n{\n",
 	    (self -> kernel_count < 256) ? "char" : "int",
 	    self -> kernel_count,
 	    self -> nonterminal_count);
