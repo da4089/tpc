@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.10 1999/02/11 04:07:15 phelps Exp $ */
+/* $Id: Grammar.c,v 1.11 1999/02/11 05:57:52 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +29,12 @@ struct Grammar_t
      * non-zero, then there is a production of the form
      * <nonterminal-3> ::= <nonterminal-4> ... in the grammar */
     char **generates;
+
+    /* The number of Kernels in the receiver */
+    int kernel_count;
+
+    /* An array containing the Kernels of each of the states in the grammar */
+    Kernel *kernels;
 };
 
 
@@ -185,6 +191,70 @@ static void PopulateGotoTable(Production production, Grammar self, List *table)
     UpdateGoto(self, table, production, 0);
 }
 
+/* Construct the set of LR(0) kernels */
+void ComputeLR0Kernels(Grammar self)
+{
+    List list = List_alloc();
+    List queue = List_alloc();
+    Kernel kernel = Kernel_alloc(self, self -> productions[0]);
+    int count = self -> nonterminal_count + self -> terminal_count;
+    int index;
+
+    List_addLast(list, kernel);
+    List_addLast(queue, kernel);
+
+    /* Loop until we don't have anything left on the queue */
+    while ((kernel = List_dequeue(queue)) != NULL)
+    {
+	Kernel *table;
+
+	/* Get the goto table for the kernel */
+	table = Kernel_getGotoTable(kernel);
+
+	/* Walk through it to see if we've already got those Kernel items */
+	for (index = 0; index < count; index++)
+	{
+	    Kernel k = table[index];
+	    if (k != NULL)
+	    {
+		if (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) != NULL)
+		{
+		    Kernel_free(k);
+		}
+		else
+		{
+		    List_addLast(list, k);
+		    List_addLast(queue, k);
+		}
+	    }
+	}
+    }
+
+    List_free(queue);
+
+    /* Create an array in which to store the Kernels */
+    self -> kernel_count = List_size(list);
+    self -> kernels = (Kernel *) calloc(self -> kernel_count, sizeof(Kernel));
+    index = 0;
+    while (! List_isEmpty(list))
+    {
+	Kernel kernel = (Kernel) List_dequeue(list);
+	self -> kernels[index] = kernel;
+	Kernel_setIndex(kernel, index);
+
+	index++;
+    }
+
+    printf("%d kernels\n", self -> kernel_count);
+}
+
+
+/* Propagate to follows information */
+static void PropagateFollows(Grammar self, int *isDone)
+{
+    *isDone = 1;
+}
+
 
 /*
  *
@@ -316,6 +386,37 @@ void Grammar_computeGoto(Grammar self, List *table, int number)
     }
 }
 
+/* Answers the index of the Kernel in the receiver */
+int Grammar_kernelIndex(Grammar self, Kernel kernel)
+{
+    int index;
+
+    /* Return failure if we're not initialized */
+    if (self -> kernels == NULL)
+    {
+	return -1;
+    }
+
+    /* Linear search through the kernels to find a match */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	if (Kernel_equals(self -> kernels[index], kernel))
+	{
+	    return index;
+	}
+    }
+
+    /* Not found is an error */
+    return -1;
+}
+
+/* Answers the Kernel corresponding to the given index */
+Kernel Grammar_getKernel(Grammar self, int index)
+{
+    return self -> kernels[index];
+}
+
+
 /* Updates the follows table to indicate that component may
  * be followed by the follows Component.  If follows is NULL, then the 
  * follows information is copied from the source table */
@@ -332,8 +433,8 @@ void Grammar_computeClosure(
     List list;
     int index;
 
-    /* If component is a terminal then we don't have to do anything */
-    if (! Component_isNonterminal(component))
+    /* If component isn't a non-terminal then we don't have to do anything */
+    if ((component == NULL) || (! Component_isNonterminal(component)))
     {
 	return;
     }
@@ -406,50 +507,22 @@ void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table)
     MarkFirst(self, nonterminal, table, productions);
 }
 
-/* Construct the set of LR(0) states */
-void Grammar_getLR0States(Grammar self)
+
+
+/* Computes the set of LALR(0) states */
+void Grammar_getLALRStates(Grammar self)
 {
-    List list = List_alloc();
-    List queue = List_alloc();
-    Kernel kernel = Kernel_alloc(self, self -> productions[0]);
-    int count = self -> nonterminal_count + self -> terminal_count;
+    int isDone = 0;
 
-    List_addLast(list, kernel);
-    List_addLast(queue, kernel);
+    /* Compute the LR0 kernels */
+    ComputeLR0Kernels(self);
 
-    /* Loop until we don't have anything left on the queue */
-    while ((kernel = List_dequeue(queue)) != NULL)
+    /* Mark the initial follows information for production 0 in kernel 0 */
+    Kernel_markEOF(self -> kernels[0]);
+
+    /* Keep propagating the follows information until it stops changing */
+    while (! isDone)
     {
-	Kernel *table;
-	int index;
-
-	/* Print the current kernel */
-	Kernel_debug(kernel, stdout);
-
-	/* Get the goto table for the kernel */
-	table = Kernel_getGotoTable(kernel);
-
-	/* Walk through it to see if we've already got those Kernel items */
-	for (index = 0; index < count; index++)
-	{
-	    Kernel k = table[index];
-	    if (k != NULL)
-	    {
-		if (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) != NULL)
-		{
-		    Kernel_free(k);
-		}
-		else
-		{
-		    List_addLast(list, k);
-		    List_addLast(queue, k);
-		}
-	    }
-	}
+	PropagateFollows(self, &isDone);
     }
-
-    List_free(queue);
-
-    printf("%ld states\n", List_size(list));
-    Kernel_computeClosure((Kernel) List_first(list));
 }

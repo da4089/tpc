@@ -1,4 +1,4 @@
-/* $Id: Grammar.h,v 1.6 1999/02/11 04:07:39 phelps Exp $
+/* $Id: Grammar.h,v 1.7 1999/02/11 05:57:56 phelps Exp $
  *
  * A Grammar is a collection of Productions which, together with a
  * starting non-terminal, construe a language.  The Grammar can be
@@ -14,6 +14,7 @@ typedef struct Grammar_t *Grammar;
 #include "List.h"
 #include "Production.h"
 #include "Nonterminal.h"
+#include "Kernel.h"
 
 /* Allocates a new Grammar with the given Productions */
 Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_count);
@@ -33,21 +34,21 @@ int Grammar_terminalCount(Grammar self);
 /* Answers the number of productions in the receiver */
 int Grammar_productionCount(Grammar self);
 
-/* Computes the contribute of the encoded production/offset (and
- * derived productions) to the goto table */
-void Grammar_computeGoto(Grammar self, List *table, int number);
-
 /* Encodes a Production and offset in a single integer */
 int Grammar_encode(Grammar self, Production production, int offset);
 
 /* Answers the Production and offset encoded in the integer */
 int Grammar_decode(Grammar self, int number, Production *production_return);
 
-/* Marks the first terminals of a given non-terminal in the table */
-void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table);
+/* Computes the contribute of the encoded production/offset (and
+ * derived productions) to the goto table */
+void Grammar_computeGoto(Grammar self, List *table, int number);
 
-/* Construct the set of LR(0) states */
-void Grammar_getLR0States(Grammar self);
+/* Answers the index of the Kernel in the receiver */
+int Grammar_kernelIndex(Grammar self, Kernel kernel);
+
+/* Answers the Kernel corresponding to the given index */
+Kernel Grammar_getKernel(Grammar self, int index);
 
 /* Updates the follows table to indicate that component may
  * be followed by the follows Component.  If follows is NULL, then the 
@@ -58,5 +59,11 @@ void Grammar_computeClosure(
     Component follows,
     char *source,
     char *table);
+
+/* Marks the first terminals of a given non-terminal in the table */
+void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table);
+
+/* Construct the set of LR(0) states */
+void Grammar_getLALRStates(Grammar self);
 
 #endif /* GRAMMAR_H */

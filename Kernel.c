@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.4 1999/02/11 01:48:39 phelps Exp $ */
+/* $Id: Kernel.c,v 1.5 1999/02/11 05:58:09 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,12 @@ struct Kernel_t
 {
     /* The Kernel's Grammar */
     Grammar grammar;
+
+    /* The Kernel's index */
+    int index;
+
+    /* The Kernel's follows table */
+    char *follows;
 
     /* The number of pairs in the Kernel */
     int count;
@@ -79,7 +85,52 @@ static void PopulateKernel(int number, Kernel self, int *index)
     self -> pairs[(*index)++] = number;
 }
 
+/* Computes the closure of the receiver */
+void ComputeClosure(Kernel self)
+{
+    /* Add a fake production for the kernel sets and a fake terminal 
+     * for determining propagation */
+    int production_count = Grammar_productionCount(self -> grammar);
+    int terminal_count = Grammar_terminalCount(self -> grammar);
+    char *table = (char *)calloc((production_count + 1) * (terminal_count + 1), sizeof(char));
+    int index;
 
+    /* Flag the propagation terminal on the fake production */
+    table[(production_count + 1) * (terminal_count + 1) - 1] = 1;
+
+    /* Go through the kernel items and use them to compute the closure */
+    for (index = 0; index < self -> count; index++)
+    {
+	Production production;
+	int offset;
+
+	offset = Grammar_decode(self -> grammar, self -> pairs[index], &production);
+	Grammar_computeClosure(
+	    self -> grammar,
+	    Production_getComponent(production, offset),
+	    Production_getComponent(production, offset + 1),
+	    table + production_count * (terminal_count + 1),
+	    table);
+    }
+
+    /* Store the table away */
+    self -> follows = table;
+
+    /* Print out the table */
+#if 0
+    for (index = 0; index <= production_count; index++)
+    {
+	int j;
+
+	printf("\n%d: ", index);
+	for (j = 0; j <= terminal_count; j++)
+	{
+	    printf("%d ", table[index * (terminal_count + 1) + j]);
+	}
+    }
+    printf("\n");
+#endif /* 0 */
+}
 
 /*
  *
@@ -102,6 +153,12 @@ Kernel Kernel_alloc(Grammar grammar, Production production)
 /* Frees the resources consumed by the receiver */
 void Kernel_free(Kernel self)
 {
+    /* Free our follows table if we have one */
+    if (self -> follows != NULL)
+    {
+	free(self -> follows);
+    }
+
     free(self);
 }
 
@@ -112,7 +169,7 @@ void Kernel_debug(Kernel self, FILE *out)
     int index;
     int offset;
 
-    fprintf(out, "Kernel %p\n", self);
+    fprintf(out, "Kernel (%d) %p\n", self -> index, self);
     fprintf(out, "  Grammar=%p\n", self -> grammar);
     for (index = 0; index < self -> count; index++)
     {
@@ -123,6 +180,18 @@ void Kernel_debug(Kernel self, FILE *out)
     }
 
     fputc('\n', out);
+}
+
+/* Sets the receiver's index */
+void Kernel_setIndex(Kernel self, int index)
+{
+    self -> index = index;
+}
+
+/* Answers the receiver's index */
+int Kernel_getIndex(Kernel self)
+{
+    return self -> index;
 }
 
 /* Answers non-zero if the receiver equals the kernel */
@@ -153,6 +222,12 @@ int Kernel_equals(Kernel self, Kernel kernel)
 
     /* Nothing else to compare, so they must be equal */
     return 1;
+}
+
+/* Set the follow information for the 0th production to be EOF */
+void Kernel_markEOF(Kernel self)
+{
+    self -> follows[0] = 1;
 }
 
 
@@ -191,47 +266,10 @@ Kernel *Kernel_getGotoTable(Kernel self)
     }
 
     free(table);
+
+    /* Compute the initial closure while we're here */
+    ComputeClosure(self);
     return result;
 }
 
-/* Computes the closure of the receiver */
-void Kernel_computeClosure(Kernel self)
-{
-    /* Add a fake production for the kernel sets and a fake terminal 
-     * for determining propagation */
-    int production_count = Grammar_productionCount(self -> grammar);
-    int terminal_count = Grammar_terminalCount(self -> grammar);
-    char *table = (char *)calloc((production_count + 1) * (terminal_count + 1), sizeof(char));
-    int index;
 
-    /* Flag the propagation terminal on the fake production */
-    table[(production_count + 1) * (terminal_count + 1) - 1] = 1;
-
-    /* Go through the kernel items and use them to compute the closure */
-    for (index = 0; index < self -> count; index++)
-    {
-	Production production;
-	int offset;
-
-	offset = Grammar_decode(self -> grammar, self -> pairs[index], &production);
-	Grammar_computeClosure(
-	    self -> grammar,
-	    Production_getComponent(production, offset),
-	    Production_getComponent(production, offset + 1),
-	    table + production_count * (terminal_count + 1),
-	    table);
-    }
-
-    /* Print out the table */
-    for (index = 0; index <= production_count; index++)
-    {
-	int j;
-
-	printf("\n%d: ", index);
-	for (j = 0; j <= terminal_count; j++)
-	{
-	    printf("%d ", table[index * (terminal_count + 1) + j]);
-	}
-    }
-    printf("\n");
-}
