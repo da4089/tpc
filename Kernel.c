@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.16 1999/02/15 13:36:12 phelps Exp $ */
+/* $Id: Kernel.c,v 1.17 1999/02/17 00:33:17 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -623,7 +623,7 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 
     /* Create a table in which to record the reductions */
     reductions = (int *)alloca(terminal_count * sizeof(int));
-    memset(reductions, 0, terminal_count * sizeof(int));
+    memset(reductions, -1, terminal_count * sizeof(int));
 
     /* Populate the reductions table */
     for (index = 0; index < self -> count; index++)
@@ -647,7 +647,7 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 		{
 		    /* Watch for reduce/reduce conflicts and default
 		     * to the first one encountered */
-		    if (*out != 0)
+		    if (*out != -1)
 		    {
 			fprintf(stderr,
 				"*** Uh oh -- reduce/reduce conflict in kernel %d\n",
@@ -675,52 +675,45 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 	int shift = (kernel == NULL) ? 0 : Kernel_getIndex(kernel);
 	int reduction = reductions[index];
 
+	/* Print a comma separator */
+	if (index != 0)
+	{
+	    fputs(", ", out);
+	}
+
+
 	/* See if there's a shift action for this terminal */
 	if (shift != 0)
 	{
 	    /* Watch for shift/reduce conflicts and default to shift */
-	    if (reduction != 0)
+	    if (reduction != -1)
 	    {
 		fprintf(stderr, "*** shift/reduce conflict in kernel %d\n", self -> index);
 		Kernel_debug(self, stderr);
 	    }
 
 	    /* Print out a shift */
-	    if (index == 0)
-	    {
-		fprintf(out, "S(%d)", shift);
-	    }
-	    else
-	    {
-		fprintf(out, ", S(%d)", shift);
-	    }
+	    fprintf(out, "S(%d)", shift);
+	}
+
+	/* Check for an accept */
+	else if (reduction == 0)
+	{
+	    /* Print out an accept */
+	    fprintf(out, "ACC");
 	}
 
 	/* Otherwise see if there's a reduce action for this terminal */
-	else if (reduction != 0)
+	else if (reduction != -1)
 	{
 	    /* Print out a reduce */
-	    if (index == 0)
-	    {
-		fprintf(out, "R(%d)", reduction);
-	    }
-	    else
-	    {
-		fprintf(out, ", R(%d)", reduction);
-	    }
+	    fprintf(out, "R(%d)", reduction);
 	}
 
 	/* Otherwise it's an error to get that transition */
 	else
 	{
-	    if (index == 0)
-	    {
-		fputs("ERR", out);
-	    }
-	    else
-	    {
-		fputs(", ERR", out);
-	    }
+	    fputs("ERR", out);
 	}
     }
 
