@@ -1,4 +1,4 @@
-/* $Id: Production.h,v 1.3 1999/02/08 18:29:24 phelps Exp $ */
+/* $Id: Production.h,v 1.4 1999/02/08 19:44:30 phelps Exp $ */
 
 #ifndef PRODUCTION_H
 #define PRODUCTION_H
@@ -26,6 +26,12 @@ int Production_getIndex(Production self);
 
 /* Answers the index of the receiver's Nonterminal */
 int Production_getNonterminalIndex(Production self);
+
+/* Answers the number of Component in the receiver */
+int Production_getCount(Production self);
+
+/* Answers one of the receiver's Components */
+Component Production_getComponent(Production self, int index);
 
 /* Answers the receiver's first Component */
 Component Production_getFirstComponent(Production self);

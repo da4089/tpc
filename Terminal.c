@@ -1,4 +1,4 @@
-/* $Id: Terminal.c,v 1.2 1999/02/08 16:31:24 phelps Exp $ */
+/* $Id: Terminal.c,v 1.3 1999/02/08 19:44:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,4 +69,10 @@ Terminal Terminal_alloc(char *name, int index)
 void Terminal_free(Terminal self)
 {
     free(self);
+}
+
+/* Answers the receiver's index */
+int Terminal_getIndex(Terminal self)
+{
+    return self -> index;
 }

@@ -1,4 +1,4 @@
-/* $Id: Production.c,v 1.3 1999/02/08 18:29:24 phelps Exp $ */
+/* $Id: Production.c,v 1.4 1999/02/08 19:44:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +13,7 @@ struct Production_t
     Nonterminal nonterminal;
 
     /* The number of components in the receiver */
-    int component_count;
+    int count;
 
     /* The receiver's components (the stuff on the right-hand side) */
     Component *components;
@@ -54,8 +54,8 @@ Production Production_alloc(Nonterminal nonterminal, List components, int index)
 
     self -> index = index;
     self -> nonterminal = nonterminal;
-    self -> component_count = List_size(components);
-    self -> components = (Component *) calloc(self -> component_count, sizeof(Component));
+    self -> count = List_size(components);
+    self -> components = (Component *) calloc(self -> count, sizeof(Component));
     List_doWithWith(components, PopulateComponents, self, &i);
 
     return self;
@@ -83,7 +83,7 @@ void Production_printWithOffset(Production self, FILE *out, int offset)
     Nonterminal_print(self -> nonterminal, out);
     fputs("::= ", out);
 
-    for (index = 0; index < self -> component_count; index++)
+    for (index = 0; index < self -> count; index++)
     {
 	if (index == offset)
 	{
@@ -113,8 +113,20 @@ int Production_getNonterminalIndex(Production self)
     return Nonterminal_getIndex(self -> nonterminal);
 }
 
+/* Answers the number of Component in the receiver */
+int Production_getCount(Production self)
+{
+    return self -> count;
+}
+
+/* Answers one of the receiver's Components */
+Component Production_getComponent(Production self, int index)
+{
+    return self -> components[index];
+}
+
 /* Answers the receiver's first Component */
 Component Production_getFirstComponent(Production self)
 {
-    return self -> components[0];
+    return Production_getComponent(self, 0);
 }
