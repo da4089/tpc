@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.12 1999/12/20 07:34:59 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.13 1999/12/20 08:42:46 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -624,8 +624,8 @@ static int compute_propagates_for_production_and_offset(
     production_t production,
     int offset,
     component_t terminal,
-    char *propagates,
-    int *changed);
+    char *propagates);
+
 
 /* Propagate a terminal to the derived productions */
 static int propagate_derived(
@@ -633,8 +633,7 @@ static int propagate_derived(
     kernel_t kernel,
     component_t nonterminal,
     component_t terminal,
-    char *propagates,
-    int *changed)
+    char *propagates)
 {
     production_t *probe;
     int ni;
@@ -645,8 +644,7 @@ static int propagate_derived(
 	if (compute_propagates_for_production_and_offset(
 	    self, kernel,
 	    *probe, 0,
-	    terminal, propagates,
-	    changed) < 0)
+	    terminal, propagates) < 0)
 	{
 	    return -1;
 	}
@@ -662,8 +660,7 @@ static int compute_propagates_for_production_and_offset(
     production_t production,
     int offset,
     component_t terminal,
-    char *propagates,
-    int *changed)
+    char *propagates)
 {
     component_t component;
     component_t next;
@@ -705,11 +702,6 @@ static int compute_propagates_for_production_and_offset(
 	{
 	    return 0;
 	}
-	else if (changed != NULL)
-	{
-	    /* Indicate that we're not done propagating yet */
-	    *changed = 1;
-	}
     }
 
     /* If the component is a terminal then there's nothing else to do */
@@ -721,7 +713,7 @@ static int compute_propagates_for_production_and_offset(
     /* See what the following component is */
     if ((next = production_get_component(production, offset + 1)) == NULL)
     {
-	propagate_derived(self, kernel, component, terminal, propagates, changed);
+	propagate_derived(self, kernel, component, terminal, propagates);
 	return 0;
     }
 
@@ -748,7 +740,7 @@ static int compute_propagates_for_production_and_offset(
 		propagate_derived(
 		    self, kernel,
 		    component, self -> terminals[index],
-		    propagates, changed);
+		    propagates);
 	    }
 	}
 
@@ -758,7 +750,7 @@ static int compute_propagates_for_production_and_offset(
     }
 
     /* Otherwise we just propagate the terminal to the target's follows set */
-    propagate_derived(self, kernel, component, next, propagates, changed);
+    propagate_derived(self, kernel, component, next, propagates);
     return 0;
 }
 
@@ -785,16 +777,58 @@ static void compute_propagates_for_kernel(grammar_t self, kernel_t kernel)
 	compute_propagates_for_production_and_offset(
 	    self, kernel,
 	    self -> productions[pi], offset,
-	    NULL, kernel -> propagates_table[index],
-	    NULL);
+	    NULL, kernel -> propagates_table[index]);
     }
 }
 
 
+/* Propagate the follows set of the kernel item for the given production */
+static void propagate_kernel_item_follows(
+    grammar_t self,
+    kernel_t kernel,
+    int index,
+    production_t production,
+    int offset,
+    int *changed)
+{
+    component_t component;
+    kernel_t target;
+    int code;
+    int i;
+
+    /* Look up the next component in the production */
+    if ((component = production_get_component(production, offset)) == NULL)
+    {
+	return;
+    }
+
+    /* Figure out where we go */
+    if ((target = self -> kernels[kernel -> goto_table[component_index(self, component)]]) == NULL)
+    {
+	abort();
+    }
+
+    code = encode(self, production_get_index(production), offset + 1);
+
+    /* Go through the terminal symbols and propagate those that are
+     * present in the follows table. */
+    for (i = 0; i < self -> terminal_count; i++)
+    {
+	if (kernel -> follows_table[index][i])
+	{
+	    /* Mark the target kernel's follows set */
+	    if (kernel_set_follows(target, code, i) == 0 && changed != NULL)
+	    {
+		*changed = 1;
+	    }
+	}
+    }
+}
+
 /* Propagate the follows table information around */
 static void propagate_follows(grammar_t self, int *changed)
 {
-    int i, j, k, m;
+    int i, j, k;
 
     /* Go through the kernels and propagate stuff */
     for (i = 0; i < self -> kernel_count; i++)
@@ -812,7 +846,6 @@ static void propagate_follows(grammar_t self, int *changed)
 		{
 		    int pi;
 		    int offset;
-		    production_t production;
 
 		    /* Work out the production and offset */
 		    if (k < 0)
@@ -825,21 +858,11 @@ static void propagate_follows(grammar_t self, int *changed)
 			offset = 0;
 		    }
 
-		    /* Look up the production */
-		    production = self -> productions[pi];
-
-		    /* Go through the terminal symbols and propagate them */
-		    for (m = 0; m < self -> terminal_count; m++)
-		    {
-			if (kernel -> follows_table[j][m])
-			{
-			    compute_propagates_for_production_and_offset(
-				self, kernel,
-				production, offset,
-				self -> terminals[m],
-				kernel -> propagates_table[j], changed);
-			}
-		    }
+		    /* Propagate everything in the follows table */
+		    propagate_kernel_item_follows(
+			self, kernel, j,
+			self -> productions[pi], offset,
+			changed);
 		}
 	    }
 	}
@@ -857,7 +880,6 @@ static int compute_propagates(grammar_t self)
     /* Prepare the kernels for propagation table construction */
     for (index = 0; index < self -> kernel_count; index++)
     {
-	printf("kernel %d\n", index);
 	compute_propagates_for_kernel(self, self -> kernels[index]);
     }
 
@@ -870,6 +892,7 @@ static int compute_propagates(grammar_t self)
     {
 	changed = 0;
 	propagate_follows(self, &changed);
+	printf("changed=%d\n", changed);
     }
 
     return 0;
@@ -991,7 +1014,8 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 	int *pairs = kernel -> pairs;
 	int j;
 
-	fprintf(out, "---\nkernel %d\n", index);
+	/* Print out the productions */
+	fprintf(out, "Kernel %d\n", index);
 	for (j = 0; j < count; j++)
 	{
 	    int first = 1;
@@ -999,6 +1023,7 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 	    int k;
 
 	    int offset = decode(self, pairs[j], &pi);
+	    fprintf(out, "  %d: ", j);
 	    production_print_with_offset(self -> productions[pi], out, offset);
 
 	    fprintf(out, ", ");
@@ -1022,6 +1047,30 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 
 	    fprintf(out, "\n");
 	}
+
+	/* Print out the goto table (nonterminals) */
+	for (j = 0; j < self -> nonterminal_count; j++)
+	{
+	    if (! (kernel -> goto_table[j] < 0))
+	    {
+		fprintf(out, "    ");
+		component_print(self -> nonterminals[j], out);
+		fprintf(out, ": %d\n", kernel -> goto_table[j]);
+	    }
+	}
+
+	/* Print out the goto table (terminals) */
+	for (j = 0; j < self -> terminal_count; j++)
+	{
+	    if (! (kernel -> goto_table[self -> nonterminal_count + j] < 0))
+	    {
+		fprintf(out, "    ");
+		component_print(self -> terminals[j], out);
+		fprintf(out, ": %d\n", kernel -> goto_table[self -> nonterminal_count + j]);
+	    }
+	}
+
+	fprintf(out, "\n");
     }
 }
 
