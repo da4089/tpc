@@ -1,10 +1,15 @@
+*.out
 .deps
 Makefile
 Makefile.in
 aclocal.m4
 config.cache
+config.h
+config.h.in
 config.log
 config.status
 configure
-*.out
+stamp-h
+stamp-h.in
 tpc
+tpc-*.tar.gz
