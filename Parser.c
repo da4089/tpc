@@ -1,21 +1,277 @@
-/* $Id: Parser.c,v 1.1 1999/02/08 09:23:54 phelps Exp $ */
+/* $Id: Parser.c,v 1.2 1999/02/08 12:02:40 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Parser.h"
+
+/*
+ * We know the maximum stack for our simple grammar in advance
+ * (which is actually about 5, but we'll make it 16 to be safe)
+ */
+#define STACK_SIZE 16
+
+/* The types of terminals */
+typedef enum
+{
+    DerivesValue,
+    NonterminalValue,
+    TerminalValue,
+    StopValue
+} TerminalType;
+
+/* The types of non-terminals */
+typedef enum
+{
+    ProductionValue,
+    ListValue
+} NonterminalType;
+
+
+/* The ReduceFunction type */
+typedef void (*ReduceFunction)(Parser self);
+
+
+/*
+ *
+ * Static function headers
+ *
+ */
+static void Push(Parser self, int state, void *value);
+static void Pop(Parser self, int count);
+static int Top(Parser self);
+
+static void ShiftReduce(Parser self, TerminalType type, void *value);
+static void Accept(Parser self);
+static void Reduce1(Parser self);
+static void Reduce2(Parser self);
+static void Reduce3(Parser self);
+static void Reduce4(Parser self);
+static void Reduce5(Parser self);
+
+/* Shift destination states.  For a given state and input, indicates
+ * which state to go to after a shift.  If the destination state is 0, 
+ * then the input should not be shifted */
+static int shiftTable[][4] =
+{
+    { 0, 2, 0, 0 }, /* 0 */
+    { 0, 0, 0, 0 }, /* 1 */
+    { 3, 0, 0, 0 }, /* 2 */
+    { 0, 5, 6, 0 }, /* 3 */
+    { 0, 8, 9, 7 }, /* 4 */
+    { 0, 0, 0, 0 }, /* 5 */
+    { 0, 0, 0, 0 }, /* 6 */
+    { 0, 0, 0, 0 }, /* 7 */
+    { 0, 0, 0, 0 }, /* 8 */
+    { 0, 0, 0, 0 }, /* 9 */
+};
+
+/* The reduce table: maps Parser states to reduction functions.
+ * NULL indicates that no reduction is possible for that state */
+ReduceFunction reduceTable[] =
+{
+    NULL, /* 0 */
+    Accept, /* 1 */
+    NULL, /* 2 */
+    NULL, /* 3 */
+    NULL, /* 4 */
+    Reduce4, /* 5 */
+    Reduce5, /* 6 */
+    Reduce1, /* 7 */
+    Reduce2, /* 8 */
+    Reduce3 /* 9 */
+};
+
+
+/* Figure out where to go after performing a reduction */
+static int gotoTable[][2] =
+{
+    { 1, 0 }, /* 0 */
+    { 0, 0 }, /* 1 */
+    { 0, 0 }, /* 2 */
+    { 0, 4 }, /* 3 */
+    { 0, 0 }, /* 4 */
+    { 0, 0 }, /* 5 */
+    { 0, 0 }, /* 6 */
+    { 0, 0 }, /* 7 */
+    { 0, 0 }, /* 8 */
+    { 0, 0 }, /* 9 */
+};
+
+
 
 /* The Parser data structure */
 struct Parser_t
 {
-    /* The receiver's stack */
-    void *stack;
-
     /* The receiver's accept callback */
     AcceptCallback callback;
 
     /* The receiver's accept callback context */
     void *context;
+
+    /* The receiver's stack */
+    int stack[STACK_SIZE];
+
+    /* A pointer to the top of the receiver's stack */
+    int *top;
+
+    /* The receiver's value stack */
+    void *value_stack[STACK_SIZE];
+
+    /* The top of the receiver's value stack */
+    void **value_top;
 };
+
+
+
+/*
+ *
+ * Static functions
+ *
+ */
+
+/* Push a state onto the stack */
+static void Push(Parser self, int state, void *value)
+{
+    /* State stack is pre-increment */
+    *(++self -> top) = state;
+
+    /* Value stack is post-increment */
+    *(self -> value_top++) = value;
+}
+
+/* Pop states off the stack */
+static void Pop(Parser self, int count)
+{
+    self -> top -= count;
+    self -> value_top -= count;
+}
+
+/* Returns the top of the stack */
+static int Top(Parser self)
+{
+    return *(self -> top);
+}
+
+
+/* Perform a Shift and then all possible reductions.  NOTE: this only 
+ * works becouse our grammar is very simple.  We have no parser states 
+ * for which both shift and reduce are possible */
+static void ShiftReduce(Parser self, TerminalType type, void *value)
+{
+    int oldState = Top(self);
+    int state = shiftTable[oldState][type];
+    ReduceFunction function;
+
+    /* If state is zero, then we've encountered an error */
+    if (state == 0)
+    {
+	fprintf(stderr, "*** eek!  error (state=%d, type=%d)\n", oldState, type);
+	exit(1);
+    }
+
+    /* Push the state onto the stack */
+    Push(self, state, value);
+
+    /* Reduce as much as possible */
+    while ((function = reduceTable[Top(self)]) != NULL)
+    {
+	function(self);
+    }
+}
+
+/* Reduction 0: <START> ::= <production> */
+static void Accept(Parser self)
+{
+    printf("Accept\n");
+
+    Pop(self, 1);
+
+    /* Call the callback if there is one */
+    if (self -> callback != NULL)
+    {
+	(*self -> callback)(self -> context, NULL);
+    }
+}
+
+/* Reduction 1: <production> ::= nonterm derives <exp-list> stop */
+static void Reduce1(Parser self)
+{
+    printf("<production> ::= nonterm derives <exp-list> stop\n");
+
+    /* Pop the old states */
+    Pop(self, 4);
+
+    /* FIX THIS: should do something with the stuff on the stack */
+
+    /* Go to the new state */
+    Push(self, gotoTable[Top(self)][ProductionValue], NULL);
+}
+
+/* Reduction 2: <exp-list> ::= <exp-list> nonterm */
+static void Reduce2(Parser self)
+{
+    printf("<exp-list> ::= <exp-list> nonterm\n");
+
+    /* Pop the old states */
+    Pop(self, 2);
+
+    /* FIX THIS: should do something with the stuff on the stack */
+
+    /* Go to the new state */
+    Push(self, gotoTable[Top(self)][ListValue], NULL);
+}
+
+/* Reduction 3: <exp-list> ::= <exp-list> term */
+static void Reduce3(Parser self)
+{
+    printf("<exp-list> ::= <exp-list> term\n");
+
+    /* Pop the old states */
+    Pop(self, 2);
+
+    /* FIX THIS: should do something with the stuff on the stack */
+
+    /* Go to the new state */
+    Push(self, gotoTable[Top(self)][ListValue], NULL);
+}
+
+/* Reduction 4: <exp-list> ::= nonterm */
+static void Reduce4(Parser self)
+{
+    printf("<exp-list> ::= nonterm\n");
+
+    /* Pop the old states */
+    Pop(self, 1);
+
+    /* FIX THIS: should do something with the stuff on the stack */
+    printf("  nonterm=<%s>\n", *((char **)self -> value_top));
+
+    /* Go to the new state */
+    Push(self, gotoTable[Top(self)][ListValue], NULL);
+}
+
+/* Reduction 5: <exp-list> ::= term */
+static void Reduce5(Parser self)
+{
+    printf("<exp-list> ::= term\n");
+
+    /* Pop the old states */
+    Pop(self, 1);
+
+    /* FIX THIS: should do something with the stuff on the stack */
+    printf("  term=%s\n", *((char **)self -> value_top));
+
+    /* Go to the new state */
+    Push(self, gotoTable[Top(self)][ListValue], NULL);
+}
+
+
+/*
+ *
+ * Exported functions
+ *
+ */
 
 /* Answers a new Parser */
 Parser Parser_alloc(AcceptCallback callback, void *context)
@@ -29,7 +285,9 @@ Parser Parser_alloc(AcceptCallback callback, void *context)
 	exit(1);
     }
 
-    self -> stack = NULL;
+    self -> top = self -> stack;
+    *(self -> top) = 0;
+    self -> value_top = self -> value_stack;
     self -> callback = callback;
     self -> context = context;
     return self;
@@ -45,30 +303,31 @@ void Parser_free(Parser self)
 /* Updates the receiver's state based on the next ::= token */
 void Parser_acceptDerives(Parser self)
 {
-    printf("::= "); fflush(stdout);
+    ShiftReduce(self, DerivesValue, NULL);
 }
 
 /* Updates the receiver's state based on the next non-terminal token */
 void Parser_acceptNonterminal(Parser self, char *value)
 {
-    printf("<%s> ", value); fflush(stdout);
+    ShiftReduce(self, NonterminalValue, strdup(value));
 }
 
 /* Updates the receiver's state based on the next terminal token */
 void Parser_acceptTerminal(Parser self, char *value)
 {
-    printf("%s ", value); fflush(stdout);
+    ShiftReduce(self, TerminalValue, strdup(value));
 }
 
 /* Updates the receiver's state based on the next stop token */
 void Parser_acceptStop(Parser self)
 {
-    printf(".\n");
+    ShiftReduce(self, StopValue, NULL);
 }
 
 /* Updates the receiver's state based on the end of input */
 void Parser_acceptEOF(Parser self)
 {
-    printf("[EOF]\n");
+    fprintf(stderr, "*** Ouch!\n");
+    exit(1);
 }
 
