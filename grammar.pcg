@@ -1,4 +1,4 @@
-# $Id: grammar.pcg,v 1.5 1999/02/19 10:39:02 phelps Exp $
+# $Id: grammar.pcg,v 1.6 1999/12/11 16:13:37 phelps Exp $
 #
 # The grammar for the parser compiler, expressed in terms of itself.
 # A grammar is merely a list of productions, which in turn consist of
@@ -11,21 +11,30 @@
 #
 
 <grammar> ::= <production-list>
-	[Accept]
+	[accept_grammar]
 
 <production-list> ::= <production-list> <production>
-	[ProductionListExtend]
+	[extend_production_list]
 <production-list> ::= <production>
-	[ProductionListCreate]
+	[make_production_list]
 
-<production> ::= nonterm derives <exp-list> function
-	[ProductionCreate]
+<production> ::= <nonterminal> DERIVES <exp-list> <function>
+	[make_production]
 
-<exp-list> ::= <exp-list> nonterm
-	[ExpListAddNonterminal]
-<exp-list> ::= <exp-list> term
-	[ExpListAddTerminal]
-<exp-list> ::= nonterm
-	[ExpListCreateNonterminal]
-<exp-list> ::= term
-	[ExpListCreateTerminal]
+<exp-list> ::= <exp-list> <nonterminal>
+	[add_component]
+<exp-list> ::= <exp-list> <terminal>
+	[add_component]
+<exp-list> ::= <nonterminal>
+	[make_exp_list]
+<exp-list> ::= <terminal>
+	[make_exp_list]
+
+<nonterminal> ::= ID
+	[make_nonterminal]
+
+<terminal> ::= STRING
+	[make_terminal]
+
+<function> ::= LBRACKET ID RBRACKET
+	[make_function]
