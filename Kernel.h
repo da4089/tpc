@@ -1,4 +1,4 @@
-/* $Id: Kernel.h,v 1.5 1999/02/11 05:58:14 phelps Exp $
+/* $Id: Kernel.h,v 1.6 1999/02/11 07:44:09 phelps Exp $
  *
  * A Kernel represents the Productions of a parser state which can't
  * be derived from the other productions in the kernel
@@ -38,5 +38,7 @@ Kernel *Kernel_getGotoTable(Kernel self);
 /* Computes the receiver's closure */
 void Kernel_computeClosure(Kernel self);
 
+/* Propagate follows information from this kernel to the ones it derives */
+void Kernel_propagateFollows(Kernel self, int *isDone);
 
 #endif /* KERNEL_H */
