@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.8 1999/02/12 05:40:02 phelps Exp $ */
+/* $Id: Kernel.c,v 1.9 1999/02/12 06:06:22 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +20,7 @@ struct Kernel_t
     int *propagates;
 
     /* The follows table */
-    Terminal *terminals;
+    char *follows;
 
     /* The number of pairs in the Kernel */
     int count;
@@ -241,6 +241,33 @@ static void PropagateDerived(
     }
 }
 
+/* Prints out the follows set for the indexed pair */
+static void PrintFollowsSet(Kernel self, int index, FILE *out)
+{
+    int count = Grammar_terminalCount(self -> grammar);
+    char *pointer = self -> follows + (index * count);
+    int isFirst = 1;
+    int i;
+
+    for (i = 0; i < count; i++)
+    {
+	if (pointer[i] != 0)
+	{
+	    if (isFirst)
+	    {
+		fputs(", ", out);
+		isFirst = 0;
+	    }
+	    else
+	    {
+		fputs("/ ", out);
+	    }
+
+	    Terminal_print(Grammar_getTerminal(self -> grammar, i), out);
+	}
+    }
+}
+
 
 /*
  *
@@ -286,6 +313,13 @@ void Kernel_debug(Kernel self, FILE *out)
 	offset = Grammar_decode(self -> grammar, self -> pairs[index], &production);
 	fprintf(out, "  %d: ", index);
 	Production_printWithOffset(production, out, offset);
+
+	/* Print follows information */
+	if (self -> follows != NULL)
+	{
+	    PrintFollowsSet(self, index, out);
+	}
+
 	fputc('\n', out);
     }
 
@@ -443,15 +477,36 @@ void Kernel_propagateFollows(Kernel self, int *isDone)
 /* Adds a terminal to the receiver's follows set for the given kernel item */
 int Kernel_addFollowsTerminal(Kernel self, int pair, Terminal terminal)
 {
-    Production production;
-    int offset = Grammar_decode(self -> grammar, pair, &production);
+    int index;
 
-    printf("Kernel_addFollowsTerminal:\n");
-    printf("  self = %d\n", self -> index);
-    printf("  pair.production = %d\n", Production_getIndex(production));
-    printf("  pair.offset = %d\n", offset);
-    printf("  terminal = ");
-    Terminal_print(terminal, stdout);
-    printf("\n\n");
-    return 0;
+    /* Make sure we have a follows set */
+    if (self -> follows == NULL)
+    {
+	self -> follows = calloc(
+	    self -> count * Grammar_nonterminalCount(self -> grammar), sizeof(char));
+    }
+
+    /* Get the index of the pair */
+    for (index = 0; index < self -> count; index++)
+    {
+	if (self -> pairs[index] == pair)
+	{
+	    char *pointer = self -> follows + 
+		(index * Grammar_terminalCount(self -> grammar)) +
+		Terminal_getIndex(terminal);
+
+	    /* If the item wasn't previously set, then set it and return that we've changed */
+	    if (*pointer == 0)
+	    {
+		*pointer = 1;
+		return 1;
+	    }
+
+	    /* Otherwise don't change a thing */
+	    return 0;
+	}
+    }
+
+    fprintf(stderr, "*** BADNESS\n");
+    exit(1);
 }
