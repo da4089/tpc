@@ -28,16 +28,33 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.1 1999/12/11 14:41:24 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.2 1999/12/11 16:14:48 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "parser.h"
+#include "component.h"
+
+typedef void *(*reduce_function_t )(parser_t self);
+
+/* Prototypes for the reduction functions */
+static void *accept_grammar(parser_t self);
+static void *extend_production_list(parser_t self);
+static void *make_production_list(parser_t self);
+static void *make_production(parser_t self);
+static void *add_component(parser_t self);
+static void *make_exp_list(parser_t self);
+static void *make_nonterminal(parser_t self);
+static void *make_terminal(parser_t self);
+static void *make_function(parser_t self);
+
+#include "grammar.h"
 
 #define INITIAL_BUFFER_SIZE 512
-#define INITIAL_STACK_SIZE 32
+#define INITIAL_STACK_SIZE 16
 
 /* The type of a lexer state */
 typedef int (*lexer_state_t)(parser_t self, int ch);
@@ -51,6 +68,21 @@ struct parser
 
     /* The callback's user-supplied argument */
     void *rock;
+
+    /* The parser's state stack */
+    int *state_stack;
+
+    /* The end of the state stack */
+    int *state_end;
+
+    /* The top of the state stack */
+    int *state_top;
+
+    /* The parser's value stack */
+    void **value_stack;
+
+    /* The top of the value stack */
+    void **value_top;
 
     /* The parser's current lexical state */
     lexer_state_t lex_state;
@@ -75,46 +107,188 @@ static int lex_id(parser_t self, int ch);
 static int lex_string(parser_t self, int ch);
 static int lex_error(parser_t self, int ch);
 
+
+/* Expands the stack */
+static int grow_stack(parser_t self)
+{
+    size_t new_count = (self -> state_end - self -> state_top) * 2;
+    int *new_state_stack;
+    void **new_value_stack;
+
+    /* Try to allocate more memory for the state stack */
+    if ((new_state_stack = (int *)realloc(
+	self -> state_stack, new_count * sizeof(int))) == NULL)
+    {
+	return -1;
+    }
+
+    /* Try to allocate memory for the new value stack */
+    if ((new_value_stack = (void **)realloc(
+	self -> value_stack, new_count * sizeof(void *))) == NULL)
+    {
+	return -1;
+    }
+
+    /* Update the pointers */
+    self -> state_end = new_state_stack + new_count;
+    self -> state_top = self -> state_top - self -> state_stack + new_state_stack;
+    self -> state_stack = new_state_stack;
+
+    self -> value_top = self -> value_top - self -> value_stack + new_value_stack;
+    self -> value_stack = new_value_stack;
+    return 0;
+}
+
+/* Push a state and value onto the stack */
+static int push(parser_t self, int state, void *value)
+{
+    if (! (self -> state_top < self -> state_end))
+    {
+	if (grow_stack(self) < 0)
+	{
+	    return -1;
+	}
+    }
+
+    /* The state stack is pre-increment */
+    *(++self -> state_top) = state;
+
+    /* The value stack is post-increment */
+    *(self -> value_top++) = value;
+
+    return 0;
+}
+
+/* Move the top of the stack back `count' positions */
+static void pop(parser_t self, int count)
+{
+    if (self -> state_stack > self -> state_top - count)
+    {
+	fprintf(stderr, "pop underflow\n");
+	abort();
+    }
+
+    self -> state_top -= count;
+    self -> value_top -= count;
+}
+
+/* Returns the top of the state stack */
+static int top(parser_t self)
+{
+    return *(self -> state_top);
+}
+
+
+
+/* Perform all possible reductions and then shift in the terminal */
+static int shift_reduce(parser_t self, terminal_t type, void *value)
+{
+    int action;
+
+    /* Reduce as many times as possible */
+    while (IS_REDUCE(action = sr_table[top(self)][type]))
+    {
+	struct production *production;
+	int reduction;
+	void *result;
+
+	/* Locate the production we're going to use to do the reduction */
+	reduction = REDUCTION(action);
+	production = productions + reduction;
+
+	/* Point the stack to the beginning of the components */
+	pop(self, production -> count);
+
+	/* Reduce by calling the production's reduction function */
+	if ((result = production -> function(self)) == NULL)
+	{
+	    fprintf(stderr, "reduce error\n");
+	    abort();
+	}
+
+	/* Push the result of the reduction back onto the stack */
+	if (push(self, REDUCE_GOTO(top(self), production), result) < 0)
+	{
+	    fprintf(stderr, "push error\n");
+	    abort();
+	}
+    }
+
+    /* Can we shift? */
+    if (IS_SHIFT(action))
+    {
+	return push(self, SHIFT_GOTO(action), value);
+    }
+
+    /* Can we accept? */
+    if (IS_ACCEPT(action))
+    {
+	/* Set up the stack */
+	pop(self, 1);
+
+	accept_grammar(self);
+	return 0;
+/*	return self -> result = accept_grammar(self) != NULL;*/
+    }
+
+    /* Everything else is an error */
+    fprintf(stderr, "*** Parse error [state=%d, type=%d]\n", top(self), type);
+/*    clean_stack(self);*/
+    return 0;
+}
+
 static int accept_eof(parser_t self)
 {
-    printf("EOF\n");
-    return 0;
+    return shift_reduce(self, TT_EOF, NULL);
 }
 
 static int accept_error(parser_t self, char *token)
 {
     printf("ERROR: %s\n", token);
-    return 0;
+    abort();
 }
 
 static int accept_lbracket(parser_t self)
 {
-    printf("LBRACKET "); fflush(stdout);
-    return 0;
+    return shift_reduce(self, TT_LBRACKET, NULL);
 }
 
 static int accept_rbracket(parser_t self)
 {
-    printf("RBRACKET "); fflush(stdout);
-    return 0;
+    return shift_reduce(self, TT_RBRACKET, NULL);
 }
 
 static int accept_derives(parser_t self)
 {
-    printf("DERIVES "); fflush(stdout);
-    return 0;
+    return shift_reduce(self, TT_DERIVES, NULL);
 }
 
 static int accept_id(parser_t self, char *id)
 {
-    printf("ID(\"%s\") ", id); fflush(stdout);
-    return 0;
+    char *value;
+
+    /* Make a copy of the id */
+    if ((value = strdup(id)) == NULL)
+    {
+	return -1;
+    }
+
+    /* Push it onto the stack and reduce */
+    return shift_reduce(self, TT_ID, value);
 }
 
 static int accept_string(parser_t self, char *string)
 {
-    printf("STRING(\"%s\") ", string); fflush(stdout);
-    return 0;
+    char *value;
+
+    /* Make a copy of the string */
+    if ((value = strdup(string)) == NULL)
+    {
+	return -1;
+    }
+
+    /* Push it onto the stack and reduce */
+    return shift_reduce(self, TT_STRING, value);
 }
 
 
@@ -375,6 +549,101 @@ static int lex_error(parser_t self, int ch)
 }
 
 
+/* Returns the nonterminal_t with the given name, creating it if necessary */
+static component_t intern_nonterminal(parser_t self, char *name)
+{
+    /* FIX THIS: need a hash table to ensure uniqueness */
+    return nonterminal_alloc(name, 19);
+}
+
+/* Returns the nonterminal_t with the given name, creating it if necessary */
+static component_t intern_terminal(parser_t self, char *name)
+{
+    /* FIX THIS: need a hash table to ensure uniqueness */
+    return terminal_alloc(name, 19);
+}
+
+/* grammar ::= production-list */
+static void *accept_grammar(parser_t self)
+{
+    printf("accept_grammar()\n");
+    exit(1);
+}
+
+/* production-list ::= production-list production */
+static void *extend_production_list(parser_t self)
+{
+    printf("accept_production_list()\n");
+    exit(1);
+}
+
+/* production-list ::= production */
+static void *make_production_list(parser_t self)
+{
+    printf("make_production_list()\n");
+    exit(1);
+}
+
+/* production ::= nonterminal "DERIVES" exp-list function */
+static void *make_production(parser_t self)
+{
+    printf("make_production()\n");
+    exit(1);
+}
+
+/* exp-list ::= exp-list nonterminal */
+/* exp-list ::= exp-list terminal */
+static void *add_component(parser_t self)
+{
+    printf("add_component()\n");
+    exit(1);
+}
+
+/* exp-list ::= nonterminal */
+/* exp-list ::= terminal */
+static void *make_exp_list(parser_t self)
+{
+    component_t component;
+
+    component = self -> value_top[0];
+    printf("make_exp_list(");
+    component_print(component, stdout);
+    printf(")\n");
+    exit(1);
+}
+
+/* nonterminal ::= "ID" */
+static void *make_nonterminal(parser_t self)
+{
+    char *name;
+    component_t nonterminal;
+
+    name = self -> value_top[0];
+    nonterminal = intern_nonterminal(self, name);
+    free(name);
+    return nonterminal;
+}
+
+/* terminal ::= "STRING" */
+static void *make_terminal(parser_t self)
+{
+    char *name;
+    component_t terminal;
+
+    name = self -> value_top[0];
+    terminal = intern_terminal(self, name);
+    free(name);
+    return terminal;
+}
+
+/* function ::= "LBRACKET" "ID" "RBRACKET" */
+static void *make_function(parser_t self)
+{
+    printf("make_function()\n");
+    exit(1);
+}
+
+
 /* Allocates and initializes a new parser_t */
 parser_t parser_alloc(parser_callback_t callback, void *rock)
 {
@@ -389,10 +658,35 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
     /* Initialize all the fields to sane values */
     self -> callback = callback;
     self -> rock = rock;
+    self -> state_stack = NULL;
+    self -> state_end = NULL;
+    self -> state_top = NULL;
+    self -> value_stack = NULL;
+    self -> value_top = NULL;
     self -> lex_state = lex_start;
     self -> token = NULL;
     self -> token_end = NULL;
     self -> point = NULL;
+
+    /* Allocate some space for the state stack */
+    if ((self -> state_stack = (int *)calloc(INITIAL_STACK_SIZE, sizeof(int))) == NULL)
+    {
+	parser_free(self);
+	return NULL;
+    }
+
+    /* Allocate space for the value stack */
+    if ((self -> value_stack = (void **)calloc(INITIAL_STACK_SIZE, sizeof(void *))) == NULL)
+    {
+	parser_free(self);
+	return NULL;
+    }
+
+    /* Set up the stack pointers */
+    self -> state_end = self -> state_stack + INITIAL_STACK_SIZE;
+    self -> state_top = self -> state_stack;
+    *(self -> state_top) = 0;
+    self -> value_top = self -> value_stack;
 
     /* Allocate some room for the token buffer */
     if ((self -> token = (unsigned char *)malloc(INITIAL_BUFFER_SIZE)) == NULL)
@@ -401,6 +695,7 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
 	return NULL;
     }
 
+    /* Set up the token pointers */
     self -> token_end = self -> token + INITIAL_BUFFER_SIZE;
     return self;
 }
@@ -448,7 +743,7 @@ int main(int argc, char *argv[])
     if ((parser = parser_alloc(NULL, NULL)) == NULL)
     {
 	perror("parser_alloc(): failed");
-	exit(1);
+	abort();
     }
 
     while (1)
@@ -459,7 +754,7 @@ int main(int argc, char *argv[])
 	if ((length = read(STDIN_FILENO, buffer, 2048)) < 0)
 	{
 	    perror("read(): failed");
-	    exit(1);
+	    abort();
 	}
 
 	parser_parse(parser, buffer, length);
