@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.26 1999/02/16 12:37:49 phelps Exp $ */
+/* $Id: Grammar.c,v 1.27 1999/02/17 00:32:22 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -295,6 +295,8 @@ void ComputeLALRStates(Grammar self)
 static void PrintMacros(Grammar self, FILE *out)
 {
     fprintf(out, "#define IS_ERROR(action) ((action) == 0)\n");
+    fprintf(out, "#define IS_ACCEPT(action) ((action) == %d)\n",
+	    self -> production_count + self -> kernel_count);
     fprintf(out, "#define IS_REDUCE(action) ((action) < %d)\n", self -> production_count);
     fprintf(out, "#define IS_SHIFT(action) (! IS_REDUCE(action))\n");
     fprintf(out, "#define REDUCTION(action) (action)\n");
@@ -367,8 +369,9 @@ static void PrintShiftReduceTable(Grammar self, FILE *out)
     int index;
 
     /* Print out some #defines to make all of this work */
-    fputs("#define ERR 0\n", out);
-    fputs("#define R(x) (x)\n", out);
+    fprintf(out, "#define ERR 0\n");
+    fprintf(out, "#define ACC %d\n", self -> production_count + self -> kernel_count);
+    fprintf(out, "#define R(x) (x)\n");
     fprintf(out, "#define S(x) (x + %d)\n\n", self -> production_count);
 
     /* Print the SR table header */
