@@ -193,18 +193,24 @@ int main(int argc, char *argv[])
 	unsigned char buffer[BUFFER_SIZE];
 	ssize_t length;
 
-	if ((length = read(fd, buffer, 2048)) < 0)
+	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
 	{
 	    perror("read(): failed");
 	    abort();
 	}
 
-	parser_parse(parser, buffer, length);
+	/* Parse what we've read so far */
+	if (parser_parse(parser, input_filename, buffer, length) < 0)
+	{
+	    close(fd);
+	    exit(1);
+	}
 
+	/* Watch for EOF */
 	if (length == 0)
 	{
 	    close(fd);
-	    return 0;
+	    exit(0);
 	}
     }
 }
