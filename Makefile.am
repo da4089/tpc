@@ -27,8 +27,10 @@
 #
 ###############################################################
 
+# First work out the executables
 bin_PROGRAMS = tpc
 
+# Tpc has some sources
 tpc_SOURCES = \
 	pcg.h \
 	component.h component.c \
@@ -38,7 +40,12 @@ tpc_SOURCES = \
 	getopt.h getopt.c getopt1.c \
 	main.c
 
+# This is the man page
+man_MANS = tpc.1
+
+# Other stuff that needs to get put in the distribution
+EXTRA_DIST = grammar.pcg $(man_MANS)
+
+# A Special rule for when the grammar changes
 pcg.h: grammar.pcg
 	@TPC@ -o $@ $<
-
-EXTRA_DIST = grammar.pcg
