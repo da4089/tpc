@@ -1,7 +1,8 @@
-/* $Id: Grammar.c,v 1.17 1999/02/12 08:58:22 phelps Exp $ */
+/* $Id: Grammar.c,v 1.18 1999/02/12 12:18:36 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Grammar.h"
 #include "Kernel.h"
 #include "Production.h"
@@ -502,7 +503,10 @@ List Grammar_getDerivedProductions(Grammar self, Nonterminal nonterminal)
 /* Marks the first terminals of a given non-terminal in the table */
 void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table)
 {
-    char *productions = (char *)alloca(self -> production_count * sizeof(char));
+    int size = self -> production_count * sizeof(char);
+    char *productions = (char *) alloca(size);
+    memset(productions, 0, size);
+
     MarkFirst(self, nonterminal, table, productions);
 }
 
