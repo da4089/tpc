@@ -1,4 +1,4 @@
-/* $Id: Nonterminal.h,v 1.1 1999/02/08 13:04:53 phelps Exp $ */
+/* $Id: Nonterminal.h,v 1.2 1999/02/08 16:31:24 phelps Exp $ */
 
 #ifndef NONTERMINAL_H
 #define NONTERMINAL_H
@@ -14,5 +14,7 @@ void Nonterminal_free(Nonterminal self);
 /* Pretty-prints the receiver */
 void Nonterminal_print(Nonterminal self, FILE *out);
 
+/* Answers the receiver's index */
+int Nonterminal_getIndex(Nonterminal self);
 
 #endif /* NONTERMINAL_H */
