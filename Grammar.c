@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.7 1999/02/08 23:18:26 phelps Exp $ */
+/* $Id: Grammar.c,v 1.8 1999/02/08 23:45:14 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -306,10 +306,17 @@ void Grammar_getLR0States(Grammar self)
 	for (index = 0; index < count; index++)
 	{
 	    Kernel k = table[index];
-	    if ((k != NULL) && (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) == NULL))
+	    if (k != NULL)
 	    {
-		List_addLast(list, k);
-		List_addLast(queue, k);
+		if (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) != NULL)
+		{
+		    Kernel_free(k);
+		}
+		else
+		{
+		    List_addLast(list, k);
+		    List_addLast(queue, k);
+		}
 	    }
 	}
     }
