@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.8 1999/12/20 15:52:05 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.9 1999/12/21 00:49:21 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -64,7 +64,7 @@ static component_t component_alloc(char *name, int index)
 
     /* Initialize its contents */
     self -> index = index;
-    memcpy(&self -> name, name, length + 1);
+    memcpy(self -> name, name, length + 1);
     return self;
 }
 
