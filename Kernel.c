@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.10 1999/02/12 07:18:16 phelps Exp $ */
+/* $Id: Kernel.c,v 1.11 1999/02/12 07:46:22 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -174,7 +174,7 @@ static void PropagatePrepare(
     {
 	/* Make sure we haven't already done this one */
 	char *pointer = table + Terminal_getIndex(terminal) +
-	    (Production_getIndex(production) * Grammar_productionCount(self -> grammar));
+	    (Production_getIndex(production) * Grammar_terminalCount(self -> grammar));
 
 	if (*pointer != 0)
 	{
@@ -337,6 +337,12 @@ void Kernel_free(Kernel self)
 	free(self -> propagates);
     }
 
+    /* Free our follows table if we have one */
+    if (self -> follows != NULL)
+    {
+	free(self -> follows);
+    }
+
     free(self);
 }
 
@@ -488,8 +494,8 @@ void Kernel_propagatePrepare(Kernel self)
     Grammar_resolveKernels(self -> grammar, self -> goto_table);
 
     /* Construct the receiver's propagates table */
-    self -> propagates = calloc(
-	self -> count * Grammar_productionCount(self -> grammar), sizeof(char));
+    length = self -> count * Grammar_productionCount(self -> grammar);
+    self -> propagates = (char *)calloc(length, sizeof(char));
 
     /* Construct a table */
     length = Grammar_productionCount(self -> grammar) * 
