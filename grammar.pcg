@@ -1,11 +1,11 @@
-<START> ::= <production-list> .
+<START> ::= <production-list> [Accept]
 
-<production-list> ::= <production-list> <production> .
-<production-list> ::= <production> .
+<production-list> ::= <production-list> <production> [ProductionListExtend]
+<production-list> ::= <production> [ProductionListCreate]
 
-<production> ::= nonterm derives <exp-list> function .
+<production> ::= nonterm derives <exp-list> function [ProductionCreate]
 
-<exp-list> ::= <exp-list> nonterm .
-<exp-list> ::= <exp-list> term .
-<exp-list> ::= nonterm .
-<exp-list> ::= term .
+<exp-list> ::= <exp-list> nonterm [ExpListAddNonterminal]
+<exp-list> ::= <exp-list> term [ExpListAddTerminal]
+<exp-list> ::= nonterm [ExpListCreateNonterminal]
+<exp-list> ::= term [ExpListCreateTerminal]
