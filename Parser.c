@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.6 1999/02/11 05:58:27 phelps Exp $ */
+/* $Id: Parser.c,v 1.7 1999/02/11 07:39:27 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -335,6 +335,18 @@ static Terminal FindOrCreateTerminal(Parser self, char *name)
     return terminal;
 }
 
+/* Copies a Nonterminal into an Array */
+static void DecodeNonterminal(char *key, Nonterminal nonterminal, Nonterminal *array)
+{
+    array[Nonterminal_getIndex(nonterminal)] = nonterminal;
+}
+
+/* Copies a Terminal into an Array */
+static void DecodeTerminal(char *key, Terminal terminal, Terminal *array)
+{
+    array[Terminal_getIndex(terminal)] = terminal;
+}
+
 
 /*
  *
@@ -404,10 +416,22 @@ void Parser_acceptStop(Parser self)
 /* Updates the receiver's state based on the end of input */
 void Parser_acceptEOF(Parser self)
 {
-    Grammar grammar = Grammar_alloc(
+    Grammar grammar;
+    Nonterminal *nonterminals;
+    Terminal *terminals;
+
+    /* Copy the nonterminals out of the Hashtable and into the array */
+    nonterminals=(Nonterminal *) calloc(Hashtable_size(self -> nonterminals), sizeof(Nonterminal));
+    Hashtable_keysAndValuesDoWith(self -> nonterminals, DecodeNonterminal, nonterminals);
+    terminals = (Terminal *) calloc(Hashtable_size(self -> terminals), sizeof(Terminal));
+    Hashtable_keysAndValuesDoWith(self -> terminals, DecodeTerminal, terminals);
+
+    grammar = Grammar_alloc(
 	self -> productions,
 	self -> nonterminal_count,
-	self -> terminal_count);
+	nonterminals,
+	self -> terminal_count,
+	terminals);
 
     /* Call the callback if there is one */
     if (self -> callback != NULL)
