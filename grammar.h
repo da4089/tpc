@@ -25,7 +25,7 @@ struct production
 
 static struct production productions[8] =
 {
-    /* <START> ::= <production-list> */
+    /* <grammar> ::= <production-list> */
     { Accept, 0, 1 },
 
     /* <production-list> ::= <production-list> <production> */
