@@ -1,4 +1,4 @@
-/* $Id: Component.h,v 1.1 1999/02/08 16:30:38 phelps Exp $
+/* $Id: Component.h,v 1.2 1999/02/08 17:15:09 phelps Exp $
  *
  * Common code for Terminals and Nonterminals
  */
@@ -27,5 +27,8 @@ typedef struct ComponentFunctions_t
 
 /* Pretty-prints the receiver */
 void Component_print(Component self, FILE *out);
+
+/* Answers non-zero if the receiver is a Nonterminal */
+int Component_isNonterminal(Component self);
 
 #endif /* COMPONENT_H */
