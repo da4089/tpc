@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.17 1999/02/17 00:33:17 phelps Exp $ */
+/* $Id: Kernel.c,v 1.18 1999/02/22 00:17:32 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -649,9 +649,10 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 		     * to the first one encountered */
 		    if (*out != -1)
 		    {
-			fprintf(stderr,
-				"*** Uh oh -- reduce/reduce conflict in kernel %d\n",
-				self -> index);
+			int tid = in - (self -> follows + (index * terminal_count));
+			fprintf(stderr, "*** Warning: reduce/reduce conflict on ");
+			Terminal_print(Grammar_getTerminal(self -> grammar, tid), stderr);
+			fprintf(stderr, "in kernel %d\n", self -> index);
 			Kernel_debug(self, stderr);
 		    }
 		    else
@@ -688,7 +689,9 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 	    /* Watch for shift/reduce conflicts and default to shift */
 	    if (reduction != -1)
 	    {
-		fprintf(stderr, "*** shift/reduce conflict in kernel %d\n", self -> index);
+		fprintf(stderr, "*** Warning: shift/reduce conflict on ");
+		Terminal_print(Grammar_getTerminal(self -> grammar, index), stderr);
+		fprintf(stderr, "in kernel %d\n", self -> index);
 		Kernel_debug(self, stderr);
 	    }
 
