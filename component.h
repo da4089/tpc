@@ -31,7 +31,7 @@
 #define COMPONENT_H
 
 #ifndef lint
-static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.4 1999/12/13 02:23:21 phelps Exp $";
+static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.5 1999/12/13 08:48:37 phelps Exp $";
 #endif /* lint */
 
 /* The component type */
@@ -55,5 +55,8 @@ char *component_get_name(component_t self);
 
 /* Returns the receiver's index */
 int component_get_index(component_t self);
+
+/* Returns nonzero if the component is a nonterminal */
+int component_is_nonterminal(component_t self);
 
 #endif /* COMPONENET_H */

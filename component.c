@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.5 1999/12/13 02:23:21 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.6 1999/12/13 08:48:37 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -137,4 +137,10 @@ component_t terminal_alloc(char *name, int index)
     /* Initialize the functions */
     self -> print = terminal_print;
     return self;
+}
+
+/* Returns nonzero if the component is a nonterminal */
+int component_is_nonterminal(component_t self)
+{
+    return self -> print == nonterminal_print;
 }
