@@ -1,0 +1,19 @@
+INTRODUCTION
+
+Ted's Parser Compiler (tpc) is yet another tool for generating LALR(1)
+parsers.  Unlike yacc and bison, tpc does not generate parser.
+Instead it generates the tables that a LALR(1) parser uses to decide
+when to shift and how to reduce the tokens it is given.  This makes it 
+possible to build reentrant parsers, the motivation for its
+construction.
+
+
+INSTALLATION
+
+The quick way:
+
+./configure
+make
+make install
+
+For more information, see the INSTALL file in this directory.
