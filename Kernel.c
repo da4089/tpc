@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.15 1999/02/15 08:03:57 phelps Exp $ */
+/* $Id: Kernel.c,v 1.16 1999/02/15 13:36:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -652,6 +652,7 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 			fprintf(stderr,
 				"*** Uh oh -- reduce/reduce conflict in kernel %d\n",
 				self -> index);
+			Kernel_debug(self, stderr);
 		    }
 		    else
 		    {
@@ -681,6 +682,7 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 	    if (reduction != 0)
 	    {
 		fprintf(stderr, "*** shift/reduce conflict in kernel %d\n", self -> index);
+		Kernel_debug(self, stderr);
 	    }
 
 	    /* Print out a shift */
@@ -705,6 +707,19 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 	    else
 	    {
 		fprintf(out, ", R(%d)", reduction);
+	    }
+	}
+
+	/* Otherwise it's an error to get that transition */
+	else
+	{
+	    if (index == 0)
+	    {
+		fputs("ERR", out);
+	    }
+	    else
+	    {
+		fputs(", ERR", out);
 	    }
 	}
     }
