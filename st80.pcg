@@ -1,4 +1,4 @@
-<START> ::= <method> 
+<START> ::= <method>
 	[function]
 
 <method> ::= <mpatt> <temps> <statements> 
