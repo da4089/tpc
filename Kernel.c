@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.12 1999/02/12 08:10:40 phelps Exp $ */
+/* $Id: Kernel.c,v 1.13 1999/02/12 08:59:07 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -263,22 +263,41 @@ void PropagateFollows(Kernel self, int index, Terminal terminal, int *isDone)
     Production production;
     int offset;
     int destination;
+    int count;
+    char *pointer;
+    int i;
 
     /* Look up our production and offset */
     offset = Grammar_decode(self -> grammar, pair, &production);
 
     /* Propagate to the kernel item's production's next position if one exists */
-    if (offset + 1 < Production_getCount(production))
+    if (offset < Production_getCount(production))
     {
 	destination = Grammar_encode(self -> grammar, production, offset + 1);
-	Kernel_addFollowsTerminal(
+	if (Kernel_addFollowsTerminal(
 	    GetGotoKernel(self, production, offset),
 	    destination,
-	    terminal);
+	    terminal))
+	{
+	    *isDone = 0;
+	}
     }
 
     /* Go through the propagates table and propagate to those items too */
-    
+    count = Grammar_productionCount(self -> grammar);
+    pointer = self -> propagates + (index * count);
+    for (i = 0; i < count; i++)
+    {
+	if (pointer[i] != 0)
+	{
+	    Production production = Grammar_getProduction(self -> grammar, i);
+	    destination = Grammar_encode(self -> grammar, production, 1);
+	    if (Kernel_addFollowsTerminal(GetGotoKernel(self, production, 0), destination, terminal))
+	    {
+		*isDone = 0;
+	    }
+	}
+    }
 }
 
 
@@ -353,7 +372,7 @@ void Kernel_debug(Kernel self, FILE *out)
     int index;
     int offset;
 
-    fprintf(out, "Kernel (%d) %p\n", self -> index, self);
+    fprintf(out, "Kernel %d (%p)\n", self -> index, self);
     fprintf(out, "  Grammar=%p\n", self -> grammar);
     for (index = 0; index < self -> count; index++)
     {
