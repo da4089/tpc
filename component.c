@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.10 1999/12/21 01:46:32 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.11 2000/03/15 05:42:14 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -113,8 +113,8 @@ void component_print(component_t self, FILE *out)
     self -> print(self, out);
 }
 
-/* Prints the receiver as an enum entry */
-void component_print_enum(component_t self, FILE *out)
+/* Prints the receiver as a C enum entry */
+void component_print_c_enum(component_t self, FILE *out)
 {
     if (self -> index == 0)
     {
@@ -123,6 +123,19 @@ void component_print_enum(component_t self, FILE *out)
     else
     {
 	fprintf(out, ",\n    TT_%s", self -> name);
+    }
+}
+
+/* Prints the receiver as a python assignment statement */
+void component_print_python_assign(component_t self, FILE *out)
+{
+    if (self -> index == 0)
+    {
+	fprintf(out, "TT_EOF = 0\n");
+    }
+    else
+    {
+	fprintf(out, "TT_%s = %d\n", self -> name, self -> index);
     }
 }
 

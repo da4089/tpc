@@ -31,7 +31,7 @@
 #define PRODUCTION_H
 
 #ifndef lint
-static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.6 1999/12/21 00:22:23 phelps Exp $";
+static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.7 2000/03/15 05:42:15 phelps Exp $";
 #endif /* lint */
 
 /* The production type */
@@ -64,7 +64,10 @@ void production_print(production_t self, FILE *out);
 /* Pretty-prints the receiver with a `*' after the nth element */
 void production_print_with_offset(production_t self, FILE *out, int offset);
 
-/* Prints the production as a struct */
-void production_print_struct(production_t self, FILE *out);
+/* Prints the production as a C struct */
+void production_print_c_struct(production_t self, FILE *out);
+
+/* Prints the production as a python tuple */
+void production_print_python_tuple(production_t self, char *module, FILE *out);
 
 #endif /* PRODUCTION_H */

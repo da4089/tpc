@@ -31,7 +31,7 @@
 #define GRAMMAR_H
 
 #ifndef lint
-static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.14 1999/12/20 15:04:54 phelps Exp $";
+static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.15 2000/03/15 05:42:15 phelps Exp $";
 #endif /* lint */
 
 /* The grammar type */
@@ -63,7 +63,10 @@ void grammar_compute_goto(grammar_t self, int **table, int code);
 /* Print out the kernels */
 void grammar_print_kernels(grammar_t self, FILE *out);
 
-/* Prints out the parse tables */
-void grammar_print_table(grammar_t self, FILE *out);
+/* Print out the parse tables in C format */
+void grammar_print_c_tables(grammar_t self, FILE *out);
+
+/* Print out the parse tables in python format */
+void grammar_print_python_tables(grammar_t self, char *module, FILE *out);
 
 #endif /* GRAMMAR_H */

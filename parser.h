@@ -31,11 +31,24 @@
 #define PARSER_H
 
 #ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.4 1999/12/21 01:52:06 phelps Exp $";
+static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.5 2000/03/15 05:42:15 phelps Exp $";
 #endif /* lint */
 
 /* The parser type */
 typedef struct parser *parser_t;
+
+/* The supported output formats */
+enum format
+{
+    /* Generate C tables */
+    FORMAT_C,
+
+    /* Generate Python tables */
+    FORMAT_PYTHON
+}; 
+
+typedef enum format format_t;
+
 
 /* The type of the parser callback */
 typedef void (*parser_callback_t)(void *arg, grammar_t grammar);

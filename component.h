@@ -31,7 +31,7 @@
 #define COMPONENT_H
 
 #ifndef lint
-static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.7 1999/12/21 01:46:32 phelps Exp $";
+static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.8 2000/03/15 05:42:14 phelps Exp $";
 #endif /* lint */
 
 /* The component type */
@@ -53,8 +53,11 @@ int component_get_origin(component_t self, char **filename_out);
 /* Pretty-prints the receiver */
 void component_print(component_t self, FILE *out);
 
-/* Prints the receiver as an enum entry */
-void component_print_enum(component_t self, FILE *out);
+/* Prints the receiver as a C enum entry */
+void component_print_c_enum(component_t self, FILE *out);
+
+/* Prints the receiver as a python assignment */
+void component_print_python_assign(component_t self, FILE *out);
 
 /* Returns the receiver's name */
 char *component_get_name(component_t self);

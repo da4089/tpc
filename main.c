@@ -42,17 +42,47 @@
 
 char *input_filename = NULL;
 char *output_filename = NULL;
+format_t format = FORMAT_C;
+char *module = NULL;
 int debug = 0;
 
 /* The list of long options */
 static struct option long_options[] =
 {
     { "output", required_argument, NULL, 'o' },
+    { "c", no_argument, NULL, 'c' },
+    { "python", optional_argument, NULL, 'p' },
     { "debug", no_argument, NULL, 'd' },
     { "version", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
     { NULL, no_argument, NULL, '\0' }
 };
+
+/* Print out the parse tables */
+static void print_tables(grammar_t grammar, FILE *out)
+{
+    /* Write the parse table to the file */
+    switch (format)
+    {
+	case FORMAT_C:
+	{
+	    grammar_print_c_tables(grammar, out);
+	    break;
+	}
+
+	case FORMAT_PYTHON:
+	{
+	    grammar_print_python_tables(grammar, module, out);
+	    break;
+	}
+
+	default:
+	{
+	    /* Should never get here */
+	    fprintf(stderr, "*** Unrecognized format %d\n", format);
+	}
+    }
+}
 
 /* Print the production rule */
 static void parser_cb(void *ignored, grammar_t grammar)
@@ -75,14 +105,13 @@ static void parser_cb(void *ignored, grammar_t grammar)
 	    exit(1);
 	}
 
-	/* Write the parse table to the file */
-	grammar_print_table(grammar, file);
+	print_tables(grammar, file);
 	fclose(file);
 	return;
     }
 
     /* Otherwise just print it to stdout */
-    grammar_print_table(grammar, stdout);
+    print_tables(grammar, stdout);
 }
 
 /* Prints out the usage message */
@@ -90,6 +119,8 @@ static void usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]... [FILE]\n", argv[0]);
     fprintf(stderr, "  -o file,     --output=file\n");
+    fprintf(stderr, "  -c,          --c\n");
+    fprintf(stderr, "  -p,          --python[=import-module]\n");
     fprintf(stderr, "  -d,          --debug\n");
     fprintf(stderr, "  -q,          --quiet\n");
     fprintf(stderr, "  -v,          --version\n");
@@ -105,7 +136,7 @@ int main(int argc, char *argv[])
     int fd;
 
     /* Read options from the command line */
-    while ((choice = getopt_long(argc, argv, "o:dqvh", long_options, NULL)) > 0)
+    while ((choice = getopt_long(argc, argv, "o:cp?dqvh", long_options, NULL)) > 0)
     {
 	switch (choice)
 	{
@@ -113,6 +144,22 @@ int main(int argc, char *argv[])
 	    case 'o':
 	    {
 		output_filename = optarg;
+		break;
+	    }
+
+	    /* --c or -c */
+	    case 'c':
+	    {
+		format = FORMAT_C;
+		break;
+	    }
+
+	    /* --python or -p */
+	    case 'p':
+	    {
+		format = FORMAT_PYTHON;
+		printf("optarg=%s\n", optarg == NULL ? "NULL" : optarg);
+		module = optarg;
 		break;
 	    }
 

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.9 1999/12/21 00:22:23 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.10 2000/03/15 05:42:15 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -168,10 +168,30 @@ void production_print_with_offset(production_t self, FILE *out, int offset)
 }
 
 /* Prints the production as a struct */
-void production_print_struct(production_t self, FILE *out)
+void production_print_c_struct(production_t self, FILE *out)
 {
     fprintf(out, "    { %s, %d, %d }",
 	    self -> reduction,
 	    component_get_index(self -> nonterminal),
 	    self -> count);
+}
+
+/* Prints the production as a python tuple */
+void production_print_python_tuple(production_t self, char *module, FILE *out)
+{
+    if (module == NULL)
+    {
+	fprintf(out, "    (%s, %d, %d)",
+		self -> reduction,
+		component_get_index(self -> nonterminal),
+		self -> count);
+    }
+    else
+    {
+	fprintf(out, "    (%s.%s, %d, %d)",
+		module,
+		self -> reduction,
+		component_get_index(self -> nonterminal),
+		self -> count);
+    }
 }
