@@ -10,8 +10,7 @@
 <and-exp-list> ::= <bool-exp> .
 
 <bool-exp> ::= <value> <predicate> <value> .
-<bool-exp> ::= <function-name> lparen rparen .
-<bool-exp> ::= <function-name> lparen <arg-list> rparen .
+<bool-exp> ::= <function> .
 <bool-exp> ::= lparen <or-exp-list> rparen .
 <bool-exp> ::= bang <bool-exp> .
 
@@ -24,6 +23,9 @@
 <predicate> ::= gt .
 <predicate> ::= le .
 <predicate> ::= ge .
+
+<function> ::= <function-name> lparen rparen .
+<function> ::= <function-name> lparen <arg-list> rparen .
 
 <function-name> ::= id .
 
@@ -61,8 +63,7 @@
 <num-value> ::= int64 .
 <num-value> ::= real64 .
 <num-value> ::= <name> .
-<num-value> ::= <function-name> lparen rparen .
-<num-value> ::= <function-name> lparen <arg-list> rparen .
+<num-value> ::= <function> .
 <num-value> ::= lparen <bit-or-exp-list> rparen .
 
 <name> ::= id .
