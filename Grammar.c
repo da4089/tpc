@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.1 1999/02/08 16:30:38 phelps Exp $ */
+/* $Id: Grammar.c,v 1.2 1999/02/08 17:16:54 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,19 +36,68 @@ struct Grammar_t
  *
  */
 
-/* Copies the contents of the productions list into the receiver's productions */
-void PopulateProductions(Production production, Grammar self, int *index)
+/* Mark the box that indicates that non-terminal x generates non-terminal x */
+static void MarkGenerates(Grammar self, int x, int y)
 {
+    int i;
+
+    /* If the box is already marked then we've no further work to do */
+    if (self -> generates[x][y])
+    {
+	return;
+    }
+
+    /* Mark the box */
+    self -> generates[x][y] = 1;
+
+    /* Propagate the mark to any non-terminal which generates us */
+    for (i = 0; i < self -> nonterminal_count; i++)
+    {
+	if ((self -> generates[i] != NULL) && (self -> generates[i][x] != 0))
+	{
+	    MarkGenerates(self, i, y);
+	}
+    }
+
+    /* Propagate the marks of the non-terminal we just generated */
+    if (self -> generates[y] != NULL)
+    {
+	for (i = 0; i < self -> nonterminal_count; i++)
+	{
+	    if (self -> generates[y][i] != 0)
+	    {
+		MarkGenerates(self, x, i);
+	    }
+	}
+    }
+}
+
+/* Copies the contents of the productions list into the receiver's productions */
+static void PopulateProductions(Production production, Grammar self, int *index)
+{
+    Component component = Production_getFirstComponent(production);
     int i = Production_getNonterminalIndex(production);
     self -> productions[(*index)++] = production;
 
+    /* If this is the first time we've encountered this non-terminal,
+     * then update our tables */
     if (self -> productionsByNonterminal[i] == NULL)
     {
 	self -> productionsByNonterminal[i] = List_alloc();
 	self -> generates[i] = (char *)calloc(self -> nonterminal_count, sizeof(char));
     }
 
+    /* Append the production to the end of the list for the non-terminal */
     List_addLast(self -> productionsByNonterminal[i], production);
+
+    /* Record a mark in the "generates" table for this non-terminal
+     * and first Component of the production if that component is a
+     * Nonterminal */
+    if (Component_isNonterminal(component))
+    {
+	int j = Nonterminal_getIndex((Nonterminal)component);
+	MarkGenerates(self, i, j);
+    }
 }
 
 
