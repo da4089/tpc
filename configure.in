@@ -3,6 +3,8 @@ AC_INIT(main.c)
 AM_INIT_AUTOMAKE(pc, 0.1)
 
 dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
 
 dnl Checks for libraries.
 
