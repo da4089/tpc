@@ -1,114 +1,198 @@
-<START> ::= <method> [function]
+<START> ::= <method> 
+	[function]
 
-<method> ::= <mpatt> <temps> <statements> [function]
-<method> ::= <mpatt> <temps> [function]
-<method> ::= <mpatt> <statements> [function]
-<method> ::= <mpatt> [function]
+<method> ::= <mpatt> <temps> <statements> 
+	[function]
+<method> ::= <mpatt> <temps> 
+	[function]
+<method> ::= <mpatt> <statements> 
+	[function]
+<method> ::= <mpatt> 
+	[function]
 
-<mpatt> ::= <usel> [function]
-<mpatt> ::= <bsel> <vname> [function]
-<mpatt> ::= <kpatt> [function]
+<mpatt> ::= <usel> 
+	[function]
+<mpatt> ::= <bsel> <vname> 
+	[function]
+<mpatt> ::= <kpatt> 
+	[function]
 
-<temps> ::= vbar <tlist> vbar [function]
-<temps> ::= vbar vbar [function]
+<temps> ::= VBAR <tlist> VBAR 
+	[function]
+<temps> ::= VBAR VBAR 
+	[function]
 
-<statements> ::= <slist> stop <rexp> [function]
-<statements> ::= <slist> stop [function]
-<statements> ::= <slist> [function]
-<statements> ::= <rexp> [function]
+<statements> ::= <slist> STOP <rexp> 
+	[function]
+<statements> ::= <slist> STOP 
+	[function]
+<statements> ::= <slist> 
+	[function]
+<statements> ::= <rexp> 
+	[function]
 
-<usel> ::= id [function]
+<usel> ::= ID 
+	[function]
 
-<bsel> ::= binop [function]
-<bsel> ::= vbar [function]
+<bsel> ::= BINOP 
+	[function]
+<bsel> ::= VBAR 
+	[function]
 
-<vname> ::= id [function]
+<vname> ::= ID 
+	[function]
 
-<kpatt> ::= <kpatt> keyword <vname> [function]
-<kpatt> ::= keyword <vname> [function]
+<kpatt> ::= <kpatt> KEYWORD <vname> 
+	[function]
+<kpatt> ::= KEYWORD <vname> 
+	[function]
 
-<tlist> ::= <tlist> <vname> [function]
-<tlist> ::= <vname> [function]
+<tlist> ::= <tlist> <vname> 
+	[function]
+<tlist> ::= <vname> 
+	[function]
 
-<slist> ::= <slist> stop <exp> [function]
-<slist> ::= <exp> [function]
+<slist> ::= <slist> STOP <exp> 
+	[function]
+<slist> ::= <exp> 
+	[function]
 
-<rexp> ::= caret <exp> stop [function]
-<rexp> ::= caret <exp> [function]
+<rexp> ::= CARET <exp> STOP 
+	[function]
+<rexp> ::= CARET <exp> 
+	[function]
 
-<exp> ::= <vname> assign <exp> [function]
-<exp> ::= <primary> [function]
-<exp> ::= <mexp> [function]
-<exp> ::= <cexp> [function]
+<exp> ::= <vname> ASSIGN <exp> 
+	[function]
+<exp> ::= <primary> 
+	[function]
+<exp> ::= <mexp> 
+	[function]
+<exp> ::= <cexp> 
+	[function]
 
-<primary> ::= <vname> [function]
-<primary> ::= <literal> [function]
-<primary> ::= <block> [function]
-<primary> ::= lparen <exp> rparen [function]
+<primary> ::= <vname> 
+	[function]
+<primary> ::= <literal> 
+	[function]
+<primary> ::= <block> 
+	[function]
+<primary> ::= LPAREN <exp> RPAREN 
+	[function]
 
-<mexp> ::= <uexp> [function]
-<mexp> ::= <bexp> [function]
-<mexp> ::= <kexp> [function]
+<mexp> ::= <uexp> 
+	[function]
+<mexp> ::= <bexp> 
+	[function]
+<mexp> ::= <kexp> 
+	[function]
 
-<cexp> ::= <mexp> <cascade> [function]
+<cexp> ::= <mexp> <cascade> 
+	[function]
 
-<literal> ::= num [function]
-<literal> ::= char [function]
-<literal> ::= string [function]
-<literal> ::= hid [function]
-<literal> ::= hbinop [function]
-<literal> ::= hkeywords [function]
-<literal> ::= <aconst> [function]
+<literal> ::= NUM 
+	[function]
+<literal> ::= CHAR 
+	[function]
+<literal> ::= STRING 
+	[function]
+<literal> ::= HID 
+	[function]
+<literal> ::= HBINOP 
+	[function]
+<literal> ::= HKEYWORDS 
+	[function]
+<literal> ::= <aconst> 
+	[function]
 
-<block> ::= lbracket <bbody> rbracket [function]
-<block> ::= lbracket rbracket [function]
+<block> ::= LBRACKET <bbody> RBRACKET 
+	[function]
+<block> ::= LBRACKET RBRACKET 
+	[function]
 
-<uexp> ::= <udesc> <usel> [function]
+<uexp> ::= <udesc> <usel> 
+	[function]
 
-<bexp> ::= <bdesc> <bsel> <udesc> [function]
+<bexp> ::= <bdesc> <bsel> <udesc> 
+	[function]
 
-<kexp> ::= <bdesc> <klist> [function]
+<kexp> ::= <bdesc> <klist> 
+	[function]
 
-<cascade> ::= <cascade> semi <usel> [function]
-<cascade> ::= <cascade> semi <bsel> <udesc> [function]
-<cascade> ::= <cascade> semi <klist> [function]
-<cascade> ::= semi <usel> [function]
-<cascade> ::= semi <bsel> <udesc> [function]
-<cascade> ::= semi <klist> [function]
+<cascade> ::= <cascade> SEMI <usel> 
+	[function]
+<cascade> ::= <cascade> SEMI <bsel> <udesc> 
+	[function]
+<cascade> ::= <cascade> SEMI <klist> 
+	[function]
+<cascade> ::= SEMI <usel> 
+	[function]
+<cascade> ::= SEMI <bsel> <udesc> 
+	[function]
+<cascade> ::= SEMI <klist> 
+	[function]
 
-<aconst> ::= hlparen <abody> rparen [function]
-<aconst> ::= hlparen rparen [function]
+<aconst> ::= HLPAREN <abody> RPAREN 
+	[function]
+<aconst> ::= HLPAREN RPAREN 
+	[function]
 
-<udesc> ::= <primary> [function]
-<udesc> ::= <uexp> [function]
+<udesc> ::= <primary> 
+	[function]
+<udesc> ::= <uexp> 
+	[function]
 
-<bdesc> ::= <udesc> [function]
-<bdesc> ::= <bexp> [function]
+<bdesc> ::= <udesc> 
+	[function]
+<bdesc> ::= <bexp> 
+	[function]
 
-<klist> ::= <klist> keyword <bdesc> [function]
-<klist> ::= keyword <bdesc> [function]
+<klist> ::= <klist> KEYWORD <bdesc> 
+	[function]
+<klist> ::= KEYWORD <bdesc> 
+	[function]
 
-<abody> ::= <abody> <symbol> [function]
-<abody> ::= <abody> <literal> [function]
-<abody> ::= <abody> <array> [function]
-<abody> ::= <symbol> [function]
-<abody> ::= <literal> [function]
-<abody> ::= <array> [function]
+<abody> ::= <abody> <symbol> 
+	[function]
+<abody> ::= <abody> <literal> 
+	[function]
+<abody> ::= <abody> <array> 
+	[function]
+<abody> ::= <symbol> 
+	[function]
+<abody> ::= <literal> 
+	[function]
+<abody> ::= <array> 
+	[function]
 
-<symbol> ::= id [function]
-<symbol> ::= bsel [function]
-<symbol> ::= keywords [function]
+<symbol> ::= ID 
+	[function]
+<symbol> ::= <bsel>
+	[function]
+<symbol> ::= KEYWORDS 
+	[function]
 
-<array> ::= lparen <abody> rparen [function]
-<array> ::= lparen rparen [function]
+<array> ::= LPAREN <abody> RPAREN 
+	[function]
+<array> ::= LPAREN RPAREN 
+	[function]
 
-<bbody> ::= <alist> vbar <temps> <statements> [function]
-<bbody> ::= <alist> vbar <temps> [function]
-<bbody> ::= <alist> vbar <statements> [function]
-<bbody> ::= <alist> vbar [function]
-<bbody> ::= <temps> <statements> [function]
-<bbody> ::= <temps> [function]
-<bbody> ::= <statements> [function]
+<bbody> ::= <alist> VBAR <temps> <statements> 
+	[function]
+<bbody> ::= <alist> VBAR <temps> 
+	[function]
+<bbody> ::= <alist> VBAR <statements> 
+	[function]
+<bbody> ::= <alist> VBAR 
+	[function]
+<bbody> ::= <temps> <statements> 
+	[function]
+<bbody> ::= <temps> 
+	[function]
+<bbody> ::= <statements> 
+	[function]
 
-<alist> ::= <alist> arg [function]
-<alist> ::= arg [function]
+<alist> ::= <alist> ARG 
+	[function]
+<alist> ::= ARG 
+	[function]
