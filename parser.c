@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.11 1999/12/21 00:33:03 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.12 1999/12/21 01:52:05 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -72,6 +72,9 @@ struct parser
     /* The callback's user-supplied argument */
     void *rock;
 
+    /* The filename from which we're reading */
+    char *filename;
+
     /* The parser's state stack */
     int *state_stack;
 
@@ -92,6 +95,9 @@ struct parser
 
     /* The parser's current lexical state */
     lexer_state_t lex_state;
+
+    /* The line number of the last id token */
+    int id_token_line;
 
     /* The token buffer */
     char *token;
@@ -208,6 +214,65 @@ static int top(parser_t self)
 }
 
 
+/* Prints an error message */
+static void print_parse_error(parser_t self, terminal_t type)
+{
+    char *token;
+    char *file = self -> filename == NULL ? "<stdin>" : self -> filename;
+
+    /* Convert the token back into a string */
+    switch (type)
+    {
+	case TT_EOF:
+	{
+	    fprintf(stderr, "%s:%d: unexpected end of file\n", file, self -> line);
+	    return;
+	}
+
+	case TT_DERIVES:
+	{
+	    token = "::=";
+	    break;
+	}
+
+	case TT_LT:
+	{
+	    token = "<";
+	    break;
+	}
+
+	case TT_ID:
+	{
+	    token = self -> token;
+	    break;
+	}
+
+	case TT_GT:
+	{
+	    token = ">";
+	    break;
+	}
+
+	case TT_LBRACKET:
+	{
+	    token = "[";
+	    break;
+	}
+
+	case TT_RBRACKET:
+	{
+	    token = "]";
+	    break;
+	}
+
+	default:
+	{
+	    abort();
+	}
+    }
+
+    fprintf(stderr, "%s:%d: parse error before `%s'\n", file, self -> line, token);
+}
 
 /* Perform all possible reductions and then shift in the terminal */
 static int shift_reduce(parser_t self, terminal_t type, void *value)
@@ -272,10 +337,10 @@ static int shift_reduce(parser_t self, terminal_t type, void *value)
     /* Watch for errors */
     if (IS_ERROR(action))
     {
-	fprintf(stderr, "parse error on line %d: [state=%d, type=%d]\n",
-		self -> line, top(self), type);
-/*    clean_stack(self);*/
+	print_parse_error(self, type);
+	return -1;
     }
+
     return 0;
 }
 
@@ -288,8 +353,10 @@ static int accept_eof(parser_t self)
 
 static int accept_error(parser_t self, char *token)
 {
-    printf("ERROR: invalid token on line %d: %s\n", self -> line, token);
-    abort();
+    char *file = self -> filename == NULL ? "<stdin>" : self -> filename;
+
+    fprintf(stderr, "%s:%d: invalid token `%s'\n", file, self -> line, self -> token);
+    return -1;
 }
 
 static int accept_lt(parser_t self)
@@ -326,6 +393,9 @@ static int accept_id(parser_t self, char *id)
     {
 	return -1;
     }
+
+    /* Record the line number */
+    self -> id_token_line = self -> line;
 
     /* Push it onto the stack and reduce */
     return shift_reduce(self, TT_ID, value);
@@ -578,7 +648,9 @@ static component_t intern_terminal(parser_t self, char *name)
     }
 
     /* Not there so create one */
-    component = terminal_alloc(name, self -> terminal_count);
+    component = terminal_alloc(
+	self -> filename, self -> id_token_line,
+	name, self -> terminal_count);
 
     /* Make space in the table for it */
     self -> terminals = (component_t *)realloc(
@@ -605,7 +677,9 @@ static component_t intern_nonterminal(parser_t self, char *name)
     }
 
     /* Not there so create one */
-    component = nonterminal_alloc(name, self -> nonterminal_count);
+    component = nonterminal_alloc(
+	self -> filename, self -> id_token_line,
+	name, self -> nonterminal_count);
 
     /* Make space for it in the table */
     self -> nonterminals = (component_t *)realloc(
@@ -857,9 +931,12 @@ void parser_free(parser_t self)
 }
 
 /* Parses the characters in the buffer */
-int parser_parse(parser_t self, unsigned char *buffer, size_t length)
+int parser_parse(parser_t self, char *filename, unsigned char *buffer, size_t length)
 {
     unsigned char *pointer;
+
+    /* Record the filename */
+    self -> filename = filename;
 
     /* An empty buffer indicates end of file */
     if (length == 0)
@@ -875,6 +952,7 @@ int parser_parse(parser_t self, unsigned char *buffer, size_t length)
 	if (self -> lex_state(self, ch = *pointer) < 0)
 	{
 	    self -> lex_state = lex_start;
+	    self -> filename = NULL;
 	    return -1;
 	}
 
@@ -885,6 +963,8 @@ int parser_parse(parser_t self, unsigned char *buffer, size_t length)
 	}
     }
 
+    /* Discard the filename */
+    self -> filename = NULL;
     return 0;
 }
 
