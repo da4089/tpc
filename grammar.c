@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.7 1999/12/13 16:51:15 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.8 1999/12/13 18:06:50 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -222,14 +222,23 @@ static void compute_generates(grammar_t self)
 /* Encode a production number and offset in a single integer. */
 static int encode(grammar_t self, int index, int offset)
 {
+#ifdef FAST
     return self -> production_count * offset + index;
+#else
+    return self -> production_count * (offset + 1) - index - 1;
+#endif
 }
 
 /* Decodes an integer into an production number and offset */
 static int decode(grammar_t self, int code, int *index_out)
 {
+#ifdef FAST
     *index_out = code % self -> production_count;
       return code / self -> production_count;
+#else
+    *index_out = self -> production_count - (code % self -> production_count) - 1;
+    return code / self -> production_count;
+#endif
 }
 
 
@@ -270,6 +279,25 @@ int intern_kernel(grammar_t self, int count, int *pairs)
 /* Adds an entry to the pairs table */
 static void add_pairs_entry(int *counts, int **table, int index, int pair)
 {
+    int i;
+
+    /* See if the pair is already present (and check order) */
+    for (i = 0; i < counts[index]; i++)
+    {
+	if (table[index][i] == pair)
+	{
+	    return;
+	}
+
+#ifndef FAST
+	if (table[index][i] <= pair)
+	{
+	    fprintf(stderr, "out of order insert!\n");
+	    abort();
+	}
+#endif	
+    }
+
     table[index] = (int *)realloc(table[index], (counts[index] + 1) * sizeof(int));
     table[index][counts[index]++] = pair;
 }
