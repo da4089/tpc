@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.2 1999/02/08 17:16:54 phelps Exp $ */
+/* $Id: Grammar.c,v 1.3 1999/02/08 18:28:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@
 struct Grammar_t
 {
     /* The number of productions */
-    int count;
+    int production_count;
 
     /* The number of non-terminals in the grammar */
     int nonterminal_count;
@@ -121,12 +121,12 @@ Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_coun
     }
 
     /* Set some initial values */
-    self -> count = List_size(productions);
+    self -> production_count = List_size(productions);
     self -> nonterminal_count = nonterminal_count;
     self -> terminal_count = terminal_count;
 
     /* Copy the productions into the receiver */
-    self -> productions = (Production *)calloc(self -> count, sizeof(Production));
+    self -> productions = (Production *)calloc(self -> production_count, sizeof(Production));
     self -> productionsByNonterminal = (List *)calloc(nonterminal_count, sizeof(List));
     self -> generates = (char **)calloc(nonterminal_count, sizeof(char *));
     List_doWithWith(productions, PopulateProductions, self, &index);
@@ -139,7 +139,7 @@ void Grammar_free(Grammar self)
 {
     int index;
 
-    for (index = 0; index < self -> count; index++)
+    for (index = 0; index < self -> production_count; index++)
     {
 	Production_free(self -> productions[index]);
     }
@@ -159,4 +159,18 @@ void Grammar_debug(Grammar self, FILE *out)
 	List_doWith(self -> productionsByNonterminal[index], Production_print, out);
 	fprintf(out, "\n");
     }
+}
+
+
+/* Encodes a Production and offset in a single integer */
+int Grammar_encode(Grammar self, Production production, int offset)
+{
+    return (self -> production_count * offset) + Production_getIndex(production);
+}
+
+/* Answers the Production and offset encoded in the integer */
+int Grammar_decode(Grammar self, int number, Production *production_return)
+{
+    *production_return = self -> productions[number % self -> production_count];
+    return number / self -> production_count;
 }
