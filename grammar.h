@@ -2,8 +2,8 @@
 #define IS_REDUCE(action) ((action) < 8)
 #define IS_SHIFT(action) (! IS_REDUCE(action))
 #define REDUCTION(action) (action)
-#define REDUCE_GOTO(state, action) \
-    (goto_table[state][production_type[REDUCTION(action)]])
+#define REDUCE_GOTO(state, production) \
+    (goto_table[state][production -> nonterm_type])
 #define SHIFT_GOTO(action) ((action) - 8)
 
 typedef enum
@@ -15,28 +15,38 @@ typedef enum
     TT_term,
 } terminal_t;
 
-static void (*productions[8])() =
+struct production
 {
-    Accept,
-    ProductionListExtend,
-    ProductionListCreate,
-    ProductionCreate,
-    ExpListAddNonterminal,
-    ExpListAddTerminal,
-    ExpListCreateNonterminal,
-    ExpListCreateTerminal,
+    void *(*function)();
+    int nonterm_type;
+    int count;
 };
 
-static int production_type[8] =
+static struct production productions[8] =
 {
-    0, /* <START> ::= <production-list> */
-    1, /* <production-list> ::= <production-list> <production> */
-    1, /* <production-list> ::= <production> */
-    2, /* <production> ::= nonterm derives <exp-list> function */
-    3, /* <exp-list> ::= <exp-list> nonterm */
-    3, /* <exp-list> ::= <exp-list> term */
-    3, /* <exp-list> ::= nonterm */
-    3, /* <exp-list> ::= term */
+    /* <START> ::= <production-list> */
+    { Accept, 0, 1 },
+
+    /* <production-list> ::= <production-list> <production> */
+    { ProductionListExtend, 1, 2 },
+
+    /* <production-list> ::= <production> */
+    { ProductionListCreate, 1, 1 },
+
+    /* <production> ::= nonterm derives <exp-list> function */
+    { ProductionCreate, 2, 4 },
+
+    /* <exp-list> ::= <exp-list> nonterm */
+    { ExpListAddNonterminal, 3, 2 },
+
+    /* <exp-list> ::= <exp-list> term */
+    { ExpListAddTerminal, 3, 2 },
+
+    /* <exp-list> ::= nonterm */
+    { ExpListCreateNonterminal, 3, 1 },
+
+    /* <exp-list> ::= term */
+    { ExpListCreateTerminal, 3, 1 }
 };
 
 #define ERR 0
