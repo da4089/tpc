@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.8 1999/02/11 07:57:04 phelps Exp $ */
+/* $Id: Parser.c,v 1.9 1999/02/12 08:58:31 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -374,9 +374,12 @@ Parser Parser_alloc(AcceptCallback callback, void *context)
     self -> production_count = 0;
     self -> nonterminal_count = 0;
     self -> nonterminals = Hashtable_alloc(101);
-    self -> terminal_count = 1;
+    self -> terminal_count = 0;
     self -> terminals = Hashtable_alloc(101);
     self -> productions = List_alloc();
+
+    /* Use an invalid terminal name to indicate end-of-file */
+    FindOrCreateTerminal(self, "<EOF>");
     return self;
 }
 
