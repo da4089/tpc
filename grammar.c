@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.24 2000/07/27 06:04:00 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.25 2000/10/27 08:35:50 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -272,7 +272,7 @@ static int verify_productions_by_nonterminal(grammar_t self)
 	    char *filename;
 	    int line = component_get_origin(self -> nonterminals[index], &filename);
 
-	    fprintf(stderr, "%s:%d: no rule to generate ", filename, line);
+	    fprintf(stderr, "%s:%d: no rule to generate ", filename ? filename : "[stdin]", line);
 	    component_print(self -> nonterminals[index], stderr);
 	    fprintf(stderr, "\n");
 	    result = -1;
