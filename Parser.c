@@ -1,7 +1,8 @@
-/* $Id: Parser.c,v 1.10 1999/02/16 09:32:30 phelps Exp $ */
+/* $Id: Parser.c,v 1.11 1999/02/16 11:12:05 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Parser.h"
 #include "Grammar.h"
 #include "Production.h"
@@ -49,14 +50,14 @@ static int Top(Parser self);
 static void ShiftReduce(Parser self, TerminalType type, void *value);
 
 /* Production reducers */
-static void Accept(Parser self);
-static void ProductionListExtend(Parser self);
-static void ProductionListCreate(Parser self);
-static void ProductionCreate(Parser self);
-static void ExpListAddNonterminal(Parser self);
-static void ExpListAddTerminal(Parser self);
-static void ExpListCreateNonterminal(Parser self);
-static void ExpListCreateTerminal(Parser self);
+static void Accept(Parser self, int reduction);
+static void ProductionListExtend(Parser self, int reduction);
+static void ProductionListCreate(Parser self, int reduction);
+static void ProductionCreate(Parser self, int reduction);
+static void ExpListAddNonterminal(Parser self, int reduction);
+static void ExpListAddTerminal(Parser self, int reduction);
+static void ExpListCreateNonterminal(Parser self, int reduction);
+static void ExpListCreateTerminal(Parser self, int reduction);
 
 #include "grammar.h"
 
@@ -136,6 +137,21 @@ static int Top(Parser self)
 }
 
 
+
+/* Copies a Nonterminal into an Array */
+static void DecodeNonterminal(char *key, Nonterminal nonterminal, Nonterminal *array)
+{
+    array[Nonterminal_getIndex(nonterminal)] = nonterminal;
+}
+
+/* Copies a Terminal into an Array */
+static void DecodeTerminal(char *key, Terminal terminal, Terminal *array)
+{
+    array[Terminal_getIndex(terminal)] = terminal;
+}
+
+
+
 /* Perform all possible reductions and finally shift in the terminal */
 static void ShiftReduce(Parser self, terminal_t type, void *value)
 {
@@ -143,11 +159,20 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
     {
 	int state = Top(self);
 	int action = sr_table[state][type];
+	int reduction;
 
 	/* Watch for errors */
 	if (IS_ERROR(action))
 	{
-	    fprintf(stderr, "*** ERROR\n");
+	    /* If we're in state #1 and the input is TT_EOF, then accept */
+	    if ((state == 1) && (type == TT_EOF))
+	    {
+		Accept(self, 0);
+		return;
+	    }
+
+	    /* Otherwise it's an error */
+	    fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
 	    exit(0);
 	}
 
@@ -159,150 +184,194 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
 	}
 
 	/* Otherwise reduce and repeat */
-	productions[REDUCTION(action)](self);
+	reduction = REDUCTION(action);
+	productions[reduction](self, reduction);
     }
 }
 
 
 
 
-
-#if 0
-{
-    int oldState = Top(self);
-    int state = shiftTable[oldState][type];
-    ReduceFunction function;
-
-    /* If state is zero, then we've encountered an error */
-    if (state == 0)
-    {
-	fprintf(stderr, "*** eek!  error (state=%d, type=%d)\n", oldState, type);
-	exit(1);
-    }
-
-    /* Push the state onto the stack */
-    Push(self, state, value);
-
-    /* Reduce as much as possible */
-    while ((function = reduceTable[Top(self)]) != NULL)
-    {
-	function(self);
-    }
-}
-#endif
 
 /* Reduce: <START> ::= <production-list> */
-static void Accept(Parser self)
+static void Accept(Parser self, int reduction)
 {
-    printf("ACCEPT\n");
+    List productions;
+    Grammar grammar;
+    Nonterminal *nonterminals;
+    Terminal *terminals;
+
+    /* Pop the productions-list off the stack */
+    Pop(self, 1);
+
+    /* Locate the production list */
+    productions = (List) self -> value_top[0];
+
+    /* Copy the nonterminals out of the Hashtable and into the array */
+    nonterminals = (Nonterminal *) calloc(Hashtable_size(self -> nonterminals), sizeof(Nonterminal));
+    Hashtable_keysAndValuesDoWith(self -> nonterminals, DecodeNonterminal, nonterminals);
+    terminals = (Terminal *) calloc(Hashtable_size(self -> terminals) + 1, sizeof(Terminal));
+    Hashtable_keysAndValuesDoWith(self -> terminals, DecodeTerminal, terminals);
+
+    /* Create a grammar */
+    grammar = Grammar_alloc(
+	productions,
+	self -> nonterminal_count,
+	nonterminals,
+	self -> terminal_count,
+	terminals);
+
+    /* Call the callback if there is one */
+    if (self -> callback != NULL)
+    {
+	(*self -> callback)(self -> context, grammar);
+    }
 }
 
 /* Reduce: <production-list> ::= <production-list> <production> */
-static void ProductionListExtend(Parser self)
+static void ProductionListExtend(Parser self, int reduction)
 {
-    Pop(self, 1);
-    List_addLast(self -> productions, *(self -> value_top));
+    List list;
+    Production production;
+
+    /* Pop the list and production off the stack */
+    Pop(self, 2);
+
+    /* Locate the list and production */
+    list = (List) self -> value_top[0];
+    production = (Production) self -> value_top[1];
+
+    /* Append the production to the end of the list */
+    List_addLast(list, production);
+
+    /* Push the list back onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), list);
 }
 
 /* Reduce: <production-list> ::= <production> */
-static void ProductionListCreate(Parser self)
+static void ProductionListCreate(Parser self, int reduction)
 {
+    Production production;
+    List list;
+
+    /* Pop the production off the stack */
+    Pop(self, 1);
     
+    /* Locate the production */
+    production = (Production) self -> value_top[0];
+
+    /* Create a list and add the production to it */
+    list = List_alloc();
+    List_addLast(list, self -> value_top[0]);
+
+    /* Push the list back onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), list);
 }
 
-
-/* Reduction 1: <production> ::= nonterm derives <exp-list> stop */
-static void Reduce1(Parser self)
+/* Reduce: <production> ::= nonterm derives <exp-list> function */
+static void ProductionCreate(Parser self, int reduction)
 {
     Production production;
     Nonterminal nonterminal;
+    char *function;
     List list;
 
     /* Pop the old states */
     Pop(self, 4);
 
-    /* FIX THIS: should do something with the stuff on the stack */
+    /* Look up the components of the production */
     nonterminal = (Nonterminal) self -> value_top[0];
     list = (List) self -> value_top[2];
+    function = (char *) self -> value_top[3];
 
-    /* Create a Production from the Nonterminal and List of components */
-    production = Production_alloc(nonterminal, list, self -> production_count++);
+    /* Create a Production */
+    production = Production_alloc(self -> production_count++, nonterminal, list, function);
+    free(function);
 
-    /* Go to the new state */
-    Push(self, gotoTable[Top(self)][ProductionValue], production);
+    /* Push the production onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), production);
 }
 
-/* Reduction 2: <exp-list> ::= <exp-list> nonterm */
-static void Reduce2(Parser self)
+/* Reduce: <exp-list> ::= <exp-list> nonterm */
+static void ExpListAddNonterminal(Parser self, int reduction)
 {
     List list;
     Nonterminal nonterminal;
 
-    /* Pop the old states */
+    /* Pop the list and nonterminal off the stack */
     Pop(self, 2);
 
-    /* Add the nonterminal to the end of the list */
-    list = self -> value_top[0];
-    nonterminal = self -> value_top[1];
+    /* Locate the list and nonterminal */
+    list = (List) self -> value_top[0];
+    nonterminal = (Nonterminal) self -> value_top[1];
+
+    /* Append the nonterminal to the end of the List */
     List_addLast(list, nonterminal);
 
-    /* Go to the new state */
-    Push(self, gotoTable[Top(self)][ListValue], list);
+    /* Push the list back onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), list);
 }
 
-/* Reduction 3: <exp-list> ::= <exp-list> term */
-static void Reduce3(Parser self)
+/* Reduce: <exp-list> ::= <exp-list> term */
+static void ExpListAddTerminal(Parser self, int reduction)
 {
     List list;
     Terminal terminal;
 
-    /* Pop the old states */
+    /* Pop the list and terminal off the stack */
     Pop(self, 2);
 
-    /* Add the terminal to the end of the list */
+    /* Locate the list and terminal */
     list = (List) self -> value_top[0];
     terminal = (Terminal) self -> value_top[1];
+
+    /* Append the terminal to the end of the list */
     List_addLast(list, terminal);
 
-    /* Go to the new state */
-    Push(self, gotoTable[Top(self)][ListValue], list);
+    /* Push the list back onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), list);
 }
 
-/* Reduction 4: <exp-list> ::= nonterm */
-static void Reduce4(Parser self)
+/* Reduce: <exp-list> ::= nonterm */
+static void ExpListCreateNonterminal(Parser self, int reduction)
 {
-    Nonterminal nonterminal;
     List list;
+    Nonterminal nonterminal;
 
-    /* Pop the old states */
+    /* Pop the nonterminal off the stack */
     Pop(self, 1);
 
-    /* Create a list containing the nonterminal */
-    nonterminal = self -> value_top[0];
+    /* Locate the nonterminal */
+    nonterminal = (Nonterminal) self -> value_top[0];
+
+    /* Create a list and append the nonterminal to the end of it */
     list = List_alloc();
     List_addLast(list, nonterminal);
 
-    /* Go to the new state */
-    Push(self, gotoTable[Top(self)][ListValue], list);
+    /* Push the list onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), list);
 }
 
-/* Reduction 5: <exp-list> ::= term */
-static void Reduce5(Parser self)
+/* Reduce: <exp-list> ::= term */
+static void ExpListCreateTerminal(Parser self, int reduction)
 {
-    Terminal terminal;
     List list;
+    Terminal terminal;
 
-    /* Pop the old states */
+    /* Pop the terminal off the stack */
     Pop(self, 1);
 
-    /* Create a list containing the terminal */
-    terminal = self -> value_top[0];
+    /* Locate the terminal */
+    terminal = (Terminal) self -> value_top[0];
+
+    /* Create a list and append the terminal to the end of it */
     list = List_alloc();
     List_addLast(list, terminal);
 
-    /* Go to the new state */
-    Push(self, gotoTable[Top(self)][ListValue], list);
+    /* Push the list onto the stack */
+    Push(self, REDUCE_GOTO(Top(self), reduction), list);
 }
+
 
 
 /* Locates the given Nonterminal (by name) or creates one if no such non-terminal exists */
@@ -331,18 +400,6 @@ static Terminal FindOrCreateTerminal(Parser self, char *name)
     }
 
     return terminal;
-}
-
-/* Copies a Nonterminal into an Array */
-static void DecodeNonterminal(char *key, Nonterminal nonterminal, Nonterminal *array)
-{
-    array[Nonterminal_getIndex(nonterminal)] = nonterminal;
-}
-
-/* Copies a Terminal into an Array */
-static void DecodeTerminal(char *key, Terminal terminal, Terminal *array)
-{
-    array[Terminal_getIndex(terminal)] = terminal;
 }
 
 
@@ -374,7 +431,6 @@ Parser Parser_alloc(AcceptCallback callback, void *context)
     self -> nonterminals = Hashtable_alloc(101);
     self -> terminal_count = 0;
     self -> terminals = Hashtable_alloc(101);
-    self -> productions = List_alloc();
 
     /* Use an invalid terminal name to indicate end-of-file */
     FindOrCreateTerminal(self, "<EOF>");
@@ -391,53 +447,31 @@ void Parser_free(Parser self)
 /* Updates the receiver's state based on the next ::= token */
 void Parser_acceptDerives(Parser self)
 {
-    ShiftReduce(self, DerivesValue, NULL);
+    ShiftReduce(self, TT_derives, NULL);
 }
 
 /* Updates the receiver's state based on the next non-terminal token */
 void Parser_acceptNonterminal(Parser self, char *value)
 {
     Nonterminal nonterminal = FindOrCreateNonterminal(self, value);
-    ShiftReduce(self, NonterminalValue, nonterminal);
+    ShiftReduce(self, TT_nonterm, nonterminal);
 }
 
 /* Updates the receiver's state based on the next terminal token */
 void Parser_acceptTerminal(Parser self, char *value)
 {
     Terminal terminal = FindOrCreateTerminal(self, value);
-    ShiftReduce(self, TerminalValue, terminal);
+    ShiftReduce(self, TT_term, terminal);
 }
 
 /* Updates the receiver's state based on the next stop token */
-void Parser_acceptStop(Parser self)
+void Parser_acceptFunction(Parser self, char *value)
 {
-    ShiftReduce(self, StopValue, NULL);
+    ShiftReduce(self, TT_function, strdup(value));
 }
 
 /* Updates the receiver's state based on the end of input */
 void Parser_acceptEOF(Parser self)
 {
-    Grammar grammar;
-    Nonterminal *nonterminals;
-    Terminal *terminals;
-
-    /* Copy the nonterminals out of the Hashtable and into the array */
-    nonterminals=(Nonterminal *) calloc(Hashtable_size(self -> nonterminals), sizeof(Nonterminal));
-    Hashtable_keysAndValuesDoWith(self -> nonterminals, DecodeNonterminal, nonterminals);
-    terminals = (Terminal *) calloc(Hashtable_size(self -> terminals) + 1, sizeof(Terminal));
-    Hashtable_keysAndValuesDoWith(self -> terminals, DecodeTerminal, terminals);
-
-    grammar = Grammar_alloc(
-	self -> productions,
-	self -> nonterminal_count,
-	nonterminals,
-	self -> terminal_count,
-	terminals);
-
-    /* Call the callback if there is one */
-    if (self -> callback != NULL)
-    {
-	(*self -> callback)(self -> context, grammar);
-    }
+    ShiftReduce(self, TT_EOF, NULL);
 }
-
