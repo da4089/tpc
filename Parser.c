@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.12 1999/02/16 12:35:46 phelps Exp $ */
+/* $Id: Parser.c,v 1.13 1999/02/17 00:33:29 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -148,16 +148,15 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
 	/* Watch for errors */
 	if (IS_ERROR(action))
 	{
-	    /* If we're in state #1 and the input is TT_EOF, then accept */
-	    if ((state == 1) && (type == TT_EOF))
-	    {
-		Accept(self);
-		return;
-	    }
-
-	    /* Otherwise it's an error */
 	    fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
 	    exit(0);
+	}
+
+	/* Accept if we can */
+	if (IS_ACCEPT(action))
+	{
+	    Accept(self);
+	    return;
 	}
 
 	/* Shift if we can */
