@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.13 1999/12/20 08:42:46 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.14 1999/12/20 09:24:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -624,7 +624,8 @@ static int compute_propagates_for_production_and_offset(
     production_t production,
     int offset,
     component_t terminal,
-    char *propagates);
+    char *propagates,
+    char *table);
 
 
 /* Propagate a terminal to the derived productions */
@@ -633,7 +634,8 @@ static int propagate_derived(
     kernel_t kernel,
     component_t nonterminal,
     component_t terminal,
-    char *propagates)
+    char *propagates,
+    char *table)
 {
     production_t *probe;
     int ni;
@@ -644,7 +646,8 @@ static int propagate_derived(
 	if (compute_propagates_for_production_and_offset(
 	    self, kernel,
 	    *probe, 0,
-	    terminal, propagates) < 0)
+	    terminal, propagates,
+	    table) < 0)
 	{
 	    return -1;
 	}
@@ -660,7 +663,8 @@ static int compute_propagates_for_production_and_offset(
     production_t production,
     int offset,
     component_t terminal,
-    char *propagates)
+    char *propagates,
+    char *table)
 {
     component_t component;
     component_t next;
@@ -691,17 +695,24 @@ static int compute_propagates_for_production_and_offset(
     else
     {
 	kernel_t target;
+	int ti = component_get_index(terminal);
 	int code;
 
 	/* Figure out which kernel this belongs in */
 	target = self -> kernels[kernel -> goto_table[component_index(self, component)]];
 	code = encode(self, pi, offset + 1);
-	
-	/* Put the terminal in the follows set of the destination */
-	if (kernel_set_follows(target, code, component_get_index(terminal)))
+
+	/* See if we've already done this one */
+	if (table[ti + pi * self -> terminal_count])
 	{
 	    return 0;
 	}
+	
+	/* Mark this production */
+	table[ti + pi * self -> terminal_count] = 1;
+
+	/* Put the terminal in the follows set of the destination */
+	kernel_set_follows(target, code, ti);
     }
 
     /* If the component is a terminal then there's nothing else to do */
@@ -710,10 +721,10 @@ static int compute_propagates_for_production_and_offset(
 	return 0;
     }
 
-    /* See what the following component is */
+    /* If there's no following component then life is easy */
     if ((next = production_get_component(production, offset + 1)) == NULL)
     {
-	propagate_derived(self, kernel, component, terminal, propagates);
+	propagate_derived(self, kernel, component, terminal, propagates, table);
 	return 0;
     }
 
@@ -740,7 +751,8 @@ static int compute_propagates_for_production_and_offset(
 		propagate_derived(
 		    self, kernel,
 		    component, self -> terminals[index],
-		    propagates);
+		    propagates,
+		    table);
 	    }
 	}
 
@@ -750,7 +762,7 @@ static int compute_propagates_for_production_and_offset(
     }
 
     /* Otherwise we just propagate the terminal to the target's follows set */
-    propagate_derived(self, kernel, component, next, propagates);
+    propagate_derived(self, kernel, component, next, propagates, table);
     return 0;
 }
 
@@ -764,7 +776,11 @@ static void compute_propagates_for_kernel(grammar_t self, kernel_t kernel)
     {
 	int pi;
 	char *table;
+	char *done_table;
 	int offset = decode(self, kernel -> pairs[index], &pi);
+
+	/* Create a table to mark the (production, terminal)s that we've done */
+	done_table = (char *)calloc(self -> terminal_count * self -> production_count, sizeof(char));
 
 	/* Make the propagates table entry if it doesn't already exist */
 	if ((table = kernel -> propagates_table[index]) == NULL)
@@ -777,7 +793,10 @@ static void compute_propagates_for_kernel(grammar_t self, kernel_t kernel)
 	compute_propagates_for_production_and_offset(
 	    self, kernel,
 	    self -> productions[pi], offset,
-	    NULL, kernel -> propagates_table[index]);
+	    NULL, table,
+	    done_table);
+
+	free(done_table);
     }
 }
 
@@ -892,7 +911,6 @@ static int compute_propagates(grammar_t self)
     {
 	changed = 0;
 	propagate_follows(self, &changed);
-	printf("changed=%d\n", changed);
     }
 
     return 0;
