@@ -15,6 +15,22 @@ tpc [-o file] [--ouput=file]
 .SH OPTIONS
 \*(Tp may be invoked with the following command-line options:
 .TP
+.B -c
+.TP
+.B --c
+Write the parser tables in a format suitable for inclusion in a C
+file.
+.TP
+.B -p
+.TP
+.BI --python= import-module
+Write the parser tables in a format suitable for import in a python
+program.  If
+.I import-module
+is given, then the reduction values are assumed to be defined in that
+module in the resulting tables.
+.TP
+.TP
 .B -o \fIfile\fP
 .TP
 .BI --output= file
