@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.10 1999/12/19 03:50:45 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.11 1999/12/19 16:04:25 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -37,8 +37,83 @@ static const char cvsid[] = "$Id: grammar.c,v 1.10 1999/12/19 03:50:45 phelps Ex
 #include "component.h"
 #include "production.h"
 #include "grammar.h"
-#include "kernel.h"
 
+/* The kernel data structure */
+typedef struct kernel *kernel_t;
+struct kernel
+{
+    /* The number of (production, offset) pairs in the kernel */
+    int count;
+
+    /* The encoded (production, offset) pairs */
+    int *pairs;
+
+    /* The kernel's go-to table */
+    int *goto_table;
+
+    /* The kernel's follows tables */
+    char **follows;
+};
+
+/* Allocates and initializes a new kernel_t */
+static kernel_t kernel_alloc(int count, int *pairs)
+{
+    kernel_t self;
+
+    /* Allocate some space for the new kernel_t */
+    if ((self = (kernel_t)malloc(sizeof(struct kernel))) == NULL)
+    {
+	return NULL;
+    }
+
+    /* Initialize its contents to sane values */
+    self -> count = count;
+    self -> pairs = pairs;
+    self -> goto_table = NULL;
+    self -> follows = NULL;
+
+    /* Allocate some room for the follows tables */
+    if ((self -> follows = (char **)calloc(count, sizeof(char *))) == NULL)
+    {
+	free(self -> pairs);
+	free(self);
+    }
+
+    return self;
+}
+
+/* Releases the resources consumed by the receiver */
+static void kernel_free(kernel_t self)
+{
+    if (self -> pairs != NULL)
+    {
+	free(self -> pairs);
+    }
+
+    if (self -> goto_table != NULL)
+    {
+	free(self -> goto_table);
+    }
+
+    free(self);
+}
+
+/* Returns nonzero if the kernel matches the set of encoded
+ * (production, offset) pairs */
+static int kernel_matches(kernel_t self, int count, int *pairs)
+{
+    /* See if the right number of pairs are there */
+    if (self -> count != count)
+    {
+	return 0;
+    }
+
+    /* Compare the arrays */
+    return memcmp(self -> pairs, pairs, count * sizeof(int *)) == 0;
+}
+
+
+/* The organization of the grammar */
 struct grammar
 {
     /* The number of productions */
@@ -155,6 +230,7 @@ static int verify_productions_by_nonterminal(grammar_t self)
 
     return result;
 }
+
 
 
 /* Indicate that the nonterminal `generator' spontaneously generates
@@ -365,12 +441,9 @@ compute_pairs_for_kernel_item(
  * parsing in this kernel. */
 static void compute_pairs(grammar_t self, kernel_t kernel, int *counts, int **table)
 {
-    int count;
-    int *pairs;
+    int count = kernel -> count;
+    int *pairs = kernel -> pairs;
     int index;
-
-    /* Get the kernel pairs */
-    count = kernel_get_pairs(kernel, &pairs);
 
     /* Add an entry for each kernel item */
     for (index = 0; index < count; index++)
@@ -442,11 +515,93 @@ int compute_lr0_kernels(grammar_t self)
 	}
 
 	/* Set the kernel's goto table */
-	kernel_set_goto_table(kernel, goto_table);
+	kernel -> goto_table = goto_table;
     }
 
     return 0;
 }
+
+
+/* Mark the nonterminals which can appear first in the given nonterminal */
+static void mark_firsts_with_table(
+    grammar_t self,
+    component_t nonterminal,
+    char *table,
+    char *tried)
+{
+    int index = component_get_index(nonterminal);
+    production_t *probe;
+
+    /* Go through the productions and mark accordingly */
+    for (probe = self -> productions_by_nonterminal[index]; *probe != NULL; probe++)
+    {
+	int pi = production_get_index(*probe);
+
+	/* Try this production if we haven't already done so */
+	if (! tried[pi])
+	{
+	    component_t component;
+
+	    /* Indicate that we've now tried this production rule */
+	    tried[pi] = 1;
+
+	    /* Look up the first component of the production */
+	    component = production_get_component(*probe, 0);
+	    if (component_is_nonterminal(component))
+	    {
+		/* Recursively add the first elements of the nonterminal */
+		mark_firsts_with_table(self, component, table, tried);
+	    }
+	    else
+	    {
+		/* Just add the terminal symbol */
+		table[component_get_index(component)] = 1;
+	    }
+	}
+    }
+}
+
+/* Marks the nonterminals which can appear first in the given nonterminal */
+static void mark_firsts(grammar_t self, component_t nonterminal, char *table)
+{
+    char *tried;
+
+    /* Make a table in which we can keep track of the productions we've tried */
+    tried = (char *)calloc(self -> production_count, sizeof(char));
+    mark_firsts_with_table(self, nonterminal, table, tried);
+    free(tried);
+}
+
+/* Compute a table which encodes which terminals can follow each
+ * production rule in a given kernel */
+static int compute_propagates(grammar_t self)
+{
+    int index;
+    char *firsts = (char *)malloc(self -> terminal_count * sizeof(char));
+
+    /* FIX THIS: this is just a handy place to do debugging */
+    for (index = 0; index < self -> nonterminal_count; index++)
+    {
+	int i;
+
+	memset(firsts, 0, self -> terminal_count * sizeof(char));
+	mark_firsts(self, self -> nonterminals[index], firsts);
+
+	component_print(self -> nonterminals[index], stdout);
+	printf(":");
+	for (i = 0; i < self -> terminal_count; i++)
+	{
+	    if (firsts[i])
+	    {
+		component_print(self -> terminals[i], stdout);
+	    }
+	}
+	printf("\n");
+    }
+
+    return 0;
+}
+
 
 /* Allocates and initializes a new nonterminal grammar_t */
 grammar_t grammar_alloc(
@@ -501,6 +656,9 @@ grammar_t grammar_alloc(
 	grammar_free(self);
 	return NULL;
     }
+
+    /* Compute the propagation table */
+    compute_propagates(self);
 
     return self;
 }
@@ -560,8 +718,9 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 
     for (index = 0; index < self -> kernel_count; index++)
     {
-	int *pairs;
-	int count = kernel_get_pairs(self -> kernels[index], &pairs);
+	kernel_t kernel = self -> kernels[index];
+	int count = kernel -> count;
+	int *pairs = kernel -> pairs;
 	int j;
 
 	fprintf(out, "---\nkernel %d\n", index);
@@ -578,6 +737,7 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 /* Pretty-prints the receiver */
 void grammar_print(grammar_t self, FILE *out)
 {
+#if 0
     int index;
     char **row;
 
@@ -597,7 +757,8 @@ void grammar_print(grammar_t self, FILE *out)
 	    }
 	}
     }
-
+#endif /* 0 */
+#if 0
     /* Print out the generates table */
     fprintf(out, "\n\ngenerates: (%p)\n", self -> generates);
     for (row = self -> generates; row < self -> generates + self -> nonterminal_count; row++)
@@ -622,5 +783,5 @@ void grammar_print(grammar_t self, FILE *out)
 	}
 	fprintf(out, "\n");
     }
+#endif /* 0 */
 }
-
