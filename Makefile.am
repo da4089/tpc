@@ -10,4 +10,6 @@ tpc_SOURCES = \
 	main.c
 
 pcg.h: grammar.pcg
-	@PC@ < $< > $@ 2> /dev/null
+	@TPC@ -o $@ $<
+
+EXTRA_DIST = grammar.pcg
