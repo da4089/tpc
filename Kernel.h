@@ -1,4 +1,4 @@
-/* $Id: Kernel.h,v 1.6 1999/02/11 07:44:09 phelps Exp $
+/* $Id: Kernel.h,v 1.7 1999/02/12 05:40:03 phelps Exp $
  *
  * A Kernel represents the Productions of a parser state which can't
  * be derived from the other productions in the kernel
@@ -29,16 +29,21 @@ int Kernel_getIndex(Kernel self);
 /* Answers non-zero if the receiver equals the kernel */
 int Kernel_equals(Kernel self, Kernel kernel);
 
-/* Set the follow information for the 0th production to be EOF */
-void Kernel_markEOF(Kernel self);
-
 /* Answers the receiver's GotoTable */
 Kernel *Kernel_getGotoTable(Kernel self);
 
 /* Computes the receiver's closure */
 void Kernel_computeClosure(Kernel self);
 
+/* Prepare to propagate the follows info */
+void Kernel_propagatePrepare(Kernel self);
+
 /* Propagate follows information from this kernel to the ones it derives */
 void Kernel_propagateFollows(Kernel self, int *isDone);
+
+/* Adds a Terminal to the receiver's follows-set. Returns non-zero if
+ * it wasn't already there */
+int Kernel_addFollowsTerminal(Kernel self, int pair, Terminal terminal);
+
 
 #endif /* KERNEL_H */
