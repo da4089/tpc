@@ -1,4 +1,4 @@
-/* $Id: Kernel.h,v 1.2 1999/02/08 19:44:04 phelps Exp $
+/* $Id: Kernel.h,v 1.3 1999/02/08 20:38:18 phelps Exp $
  *
  * A Kernel represents the Productions of a parser state which can't
  * be derived from the other productions in the kernel
@@ -20,7 +20,12 @@ void Kernel_free(Kernel self);
 /* Prints debugging information about the receiver */
 void Kernel_debug(Kernel self, FILE *out);
 
+/* Answers non-zero if the receiver equals the kernel */
+int Kernel_equals(Kernel self, Kernel kernel);
+
 /* Answers the receiver's GotoTable */
 Kernel *Kernel_getGotoTable(Kernel self);
+
+
 
 #endif /* KERNEL_H */

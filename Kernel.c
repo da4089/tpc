@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.2 1999/02/08 19:44:04 phelps Exp $ */
+/* $Id: Kernel.c,v 1.3 1999/02/08 20:38:17 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +43,33 @@ Kernel Alloc(Grammar grammar, int count)
     /* IT'S UP TO THE CALLER TO INITIALIZE THE PAIRS */
 
     return self;
+}
+
+/* Make sure the pairs are sorted */
+static int Compare(const void *i, const void *j)
+{
+    int *x = (int *)i;
+    int *y = (int *)j;
+
+    if (*x < *y)
+    {
+	return -1;
+    }
+    else if (*x > *y)
+    {
+	return 1;
+    }
+    else
+    {
+	return 0;
+    }
+}
+
+/* Sorts the Kernel's pairs (easy sorting order!) */
+static void Sort(Kernel self)
+{
+    /* Use qsort to sort the elements */
+    qsort(self -> pairs, self -> count, sizeof(int), Compare);
 }
 
 
@@ -98,6 +125,37 @@ void Kernel_debug(Kernel self, FILE *out)
     fputc('\n', out);
 }
 
+/* Answers non-zero if the receiver equals the kernel */
+int Kernel_equals(Kernel self, Kernel kernel)
+{
+    int index;
+
+    /* Check the Grammar (!) */
+    if (self -> grammar != kernel -> grammar)
+    {
+	return 0;
+    }
+
+    /* Check the number of pairs */
+    if (self -> count != kernel -> count)
+    {
+	return 0;
+    }
+
+    /* Since the pairs are sorted we just compare them one at a time */
+    for (index = 0; index < self -> count; index++)
+    {
+	if (self -> pairs[index] != kernel -> pairs[index])
+	{
+	    return 0;
+	}
+    }
+
+    /* Nothing else to compare, so they must be equal */
+    return 1;
+}
+
+
 /* Answers the receiver's GotoTable */
 Kernel *Kernel_getGotoTable(Kernel self)
 {
@@ -122,10 +180,12 @@ Kernel *Kernel_getGotoTable(Kernel self)
     {
 	if (table[index] != NULL)
 	{
+	    Kernel k = Alloc(self -> grammar, List_size(table[index]));
 	    int i = 0;
 
-	    result[index] = Alloc(self -> grammar, List_size(table[index]));
-	    List_doWithWith(table[index], PopulateKernel, result[index], &i);
+	    result[index] = k;
+	    List_doWithWith(table[index], PopulateKernel, k, &i);
+	    Sort(k);
 	    List_free(table[index]);
 	}
     }
@@ -133,3 +193,4 @@ Kernel *Kernel_getGotoTable(Kernel self)
     free(table);
     return result;
 }
+
