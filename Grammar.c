@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.18 1999/02/12 12:18:36 phelps Exp $ */
+/* $Id: Grammar.c,v 1.19 1999/02/15 08:03:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -247,8 +247,6 @@ void ComputeLR0Kernels(Grammar self)
 
 	index++;
     }
-
-    printf("%d kernels\n", self -> kernel_count);
 }
 
 
@@ -264,6 +262,33 @@ static void PropagateFollows(Grammar self, int *isDone)
     }
 }
 
+/* Computes the set of LALR(0) states */
+void ComputeLALRStates(Grammar self)
+{
+    int index;
+    int isDone = 0;
+
+    /* Compute the LR0 kernels */
+    ComputeLR0Kernels(self);
+
+    /* Prepare the kernels for computation of follows information */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	Kernel_propagatePrepare(self -> kernels[index]);
+    }
+
+    /* Inject the EOF terminal into the root production */
+    Kernel_addFollowsTerminal(
+	self -> kernels[0],
+	Grammar_encode(self, self -> productions[0], 0),
+	self -> terminals[0]);
+
+    /* Keep propagating the follows information until it stops changing */
+    while (! isDone)
+    {
+	PropagateFollows(self, &isDone);
+    }
+}
 
 /*
  *
@@ -512,36 +537,39 @@ void Grammar_markFirst(Grammar self, Nonterminal nonterminal, char *table)
 
 
 
-/* Computes the set of LALR(0) states */
-void Grammar_getLALRStates(Grammar self)
+
+
+/* Print out a parse table */
+void Grammar_printTable(Grammar self, FILE *out)
 {
     int index;
-    int isDone = 0;
 
-    /* Compute the LR0 kernels */
-    ComputeLR0Kernels(self);
+    /* Compute the LALR states */
+    ComputeLALRStates(self);
 
-    /* Prepare the kernels for computation of follows information */
+    /* Print the SR table header */
+    fprintf(out, "int sr_table[%d][%d] =\n{\n", self -> terminal_count, self -> kernel_count);
+
+    /* Go through each kernel and print out its part of the SR table */
     for (index = 0; index < self -> kernel_count; index++)
     {
-	Kernel_propagatePrepare(self -> kernels[index]);
+	Kernel_printSRTableEntry(self -> kernels[index], out);
     }
 
-    /* Inject the EOF terminal into the root production */
-    Kernel_addFollowsTerminal(
-	self -> kernels[0],
-	Grammar_encode(self, self -> productions[0], 0),
-	self -> terminals[0]);
+    /* Close off the SR table */
+    fputs("}\n", out);
 
-    /* Keep propagating the follows information until it stops changing */
-    while (! isDone)
-    {
-	PropagateFollows(self, &isDone);
-    }
 
-    /* Print out the result */
+
+    /* Print the goto table header */
+    fprintf(out, "int goto_table[%d][%d] = \n{\n", self -> nonterminal_count, self -> kernel_count);
+    
+    /* Go through each kernel and print its portion of the goto table */
     for (index = 0; index < self -> kernel_count; index++)
     {
-	Kernel_debug(self -> kernels[index], stdout);
+	Kernel_printGotoTableEntry(self -> kernels[index], out);
     }
+
+    /* Close off the goto table */
+    fputs("}\n", out);
 }
