@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.12 1999/12/21 01:52:05 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.13 2002/04/11 21:41:41 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -326,6 +326,7 @@ static int shift_reduce(parser_t self, terminal_t type, void *value)
 	    return -1;
 	}
 
+	/* Deliver the grammar to the callback */
 	if (self -> callback != NULL)
 	{
 	    self -> callback(self -> rock, result);
@@ -817,25 +818,14 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
 	return NULL;
     }
 
+    /* Set everything to a sane value: 0 */
+    memset(self, 0, sizeof(struct parser));
+
     /* Initialize all the fields to sane values */
     self -> callback = callback;
     self -> rock = rock;
-    self -> state_stack = NULL;
-    self -> state_end = NULL;
-    self -> state_top = NULL;
-    self -> value_stack = NULL;
-    self -> value_top = NULL;
     self -> line = 1;
     self -> lex_state = lex_start;
-    self -> token = NULL;
-    self -> token_end = NULL;
-    self -> point = NULL;
-    self -> terminal_count = 0;
-    self -> terminals = NULL;
-    self -> nonterminal_count = 0;
-    self -> nonterminals = NULL;
-    self -> production_count = 0;
-    self -> productions = NULL;
 
     /* Allocate some space for the state stack */
     if ((self -> state_stack = (int *)calloc(INITIAL_STACK_SIZE, sizeof(int))) == NULL)
@@ -915,6 +905,11 @@ void parser_free(parser_t self)
 	}
 
 	free(self -> nonterminals);
+    }
+
+    if (self -> components)
+    {
+	free(self -> components);
     }
 
     if (self -> productions != NULL)
