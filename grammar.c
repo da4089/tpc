@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.6 1999/12/13 08:49:04 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.7 1999/12/13 16:51:15 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -219,28 +219,196 @@ static void compute_generates(grammar_t self)
     }
 }
 
-
-/* Adds a kernel_t to the array of kernels */
-void add_kernel(grammar_t self, kernel_t kernel)
+/* Encode a production number and offset in a single integer. */
+static int encode(grammar_t self, int index, int offset)
 {
+    return self -> production_count * offset + index;
+}
+
+/* Decodes an integer into an production number and offset */
+static int decode(grammar_t self, int code, int *index_out)
+{
+    *index_out = code % self -> production_count;
+      return code / self -> production_count;
+}
+
+
+/* Locates or creates a kernel for the given goto pairs and returns its index*/
+int intern_kernel(grammar_t self, int count, int *pairs)
+{
+    int index;
+    kernel_t kernel;
+
+    /* If there are no pairs then don't do anything special */
+    if (count == 0)
+    {
+	return -1;
+    }
+
+    /* See if we've already got a matching kernel */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	if (kernel_matches(self -> kernels[index], count, pairs))
+	{
+	    free(pairs);
+	    return index;
+	}
+    }
+
+    /* Not there, so create a new kernel */
+    kernel = kernel_alloc(count, pairs);
+
+    /* And put it in the table */
     self -> kernels = (kernel_t *)realloc(
 	self -> kernels, (self -> kernel_count + 1) * sizeof(kernel_t));
-    self -> kernels[self -> kernel_count++] = kernel;
+    self -> kernels[self -> kernel_count] = kernel;
+
+    /* Return its index */
+    return self -> kernel_count++;
+}
+
+/* Adds an entry to the pairs table */
+static void add_pairs_entry(int *counts, int **table, int index, int pair)
+{
+    table[index] = (int *)realloc(table[index], (counts[index] + 1) * sizeof(int));
+    table[index][counts[index]++] = pair;
+}
+
+/* Returns the index to use for the given component */
+int component_index(grammar_t self, component_t component)
+{
+    if (component_is_nonterminal(component))
+    {
+	return component_get_index(component);
+    }
+
+    return self -> nonterminal_count + component_get_index(component);
+}
+
+/* Computes the pairs table for the given kernel */
+void compute_pairs(grammar_t self, kernel_t kernel, int *counts, int **table)
+{
+    int count;
+    int *pairs;
+    int index;
+
+    /* Get the kernel pairs */
+    count = kernel_get_pairs(kernel, &pairs);
+
+    /* Add an entry for each kernel item */
+    for (index = 0; index < count; index++)
+    {
+	int production_index;
+	int offset = decode(self, pairs[index], &production_index);
+	production_t production = self -> productions[production_index];
+	component_t component = production_get_component(production, offset);
+
+	/* Insert an entry for the component into the table */
+	if (component != NULL)
+	{
+	    add_pairs_entry(
+		counts, table,
+		component_index(self, component),
+		encode(self, production_index, offset + 1));
+	}
+    }
+
+    /* Compute the closure of each kernel item using the generates table */
+    for (index = 0; index < count; index++)
+    {
+	int production_index;
+	int offset = decode(self, pairs[index], &production_index);
+	production_t production = self -> productions[production_index];
+	component_t component = production_get_component(production, offset);
+
+	/* Look up the next component */
+	if (component != NULL && component_is_nonterminal(component))
+	{
+	    int ci = component_get_index(component);
+	    char *generates = self -> generates[ci];
+	    int j;
+
+	    /* Make sure the entry gets put in even if it doesn't generate anything else */
+	    if (generates == NULL)
+	    {
+		production_t *probe;
+
+		/* Generate each production */
+		for (probe = self -> productions_by_nonterminal[ci]; *probe != NULL; probe++)
+		{
+		    add_pairs_entry(
+			counts, table,
+			component_index(self, production_get_component(*probe, 0)),
+			encode(self, production_get_index(*probe), 1));
+		}
+	    }
+	    else
+	    {
+		/* Go through the generates entry for this component */
+		for (j = 0; j < self -> nonterminal_count; j++)
+		{
+		    if (generates[j] || ci == j)
+		    {
+			production_t *probe;
+			
+			/* Generate each production */
+			for (probe = self -> productions_by_nonterminal[j]; *probe != NULL; probe++)
+			{
+			    add_pairs_entry(
+				counts, table,
+				component_index(self, production_get_component(*probe, 0)),
+				encode(self, production_get_index(*probe), 1));
+			}
+		    }
+		}
+	    }
+	}
+    }
 }
 
 /* Computes the LR(0) kernels for the grammar */
 int compute_lr0_kernels(grammar_t self)
 {
-    kernel_t seed;
+    int *pairs;
+    int count = grammar_get_component_count(self);
+    int *pairs_counts;
+    int **pairs_table;
+    int *goto_table;
+    int i, j;
 
-    /* Construct the seed kernel */
-    if ((seed = kernel_alloc(self, self -> productions[0])) == NULL)
+    /* Construct the first kernel to seed the table */
+    pairs = (int *)malloc(sizeof(int));
+    pairs[0] = encode(self, 0, 0);
+    intern_kernel(self, 1, pairs);
+
+    /* Allocate some room for the goto table */
+    pairs_counts = (int *)calloc(count, sizeof(int *));
+    pairs_table = (int **)calloc(count, sizeof(int *));
+
+    /* Do the goto table thing for each kernel */
+    for (i = 0; i < self -> kernel_count; i++)
     {
-	return -1;
+	kernel_t kernel = self -> kernels[i];
+
+	/* Compute the pairs from the kernel */
+	compute_pairs(self, kernel, pairs_counts, pairs_table);
+
+	/* Allocate room for the resulting goto table */
+	goto_table = (int *)calloc(count, sizeof(int));
+
+	/* Translate the pairs into kernel indices */
+	for (j = 0; j < count; j++)
+	{
+	    goto_table[j] = intern_kernel(self, pairs_counts[j], pairs_table[j]);
+	    pairs_counts[j] = 0;
+	    pairs_table[j] = NULL;
+	}
+
+	/* Set the kernel's goto table */
+	kernel_set_goto_table(kernel, goto_table);
     }
 
-    /* Add it to the list of kernels */
-    add_kernel(self, seed);
+    return 0;
 }
 
 /* Allocates and initializes a new nonterminal grammar_t */
@@ -340,19 +508,6 @@ int grammar_get_component_count(grammar_t self)
     return self -> terminal_count + self -> nonterminal_count;
 }
 
-/* Construct a single number to represent a production_t and offset.
- * Construct them to order themselves nicely. */
-int grammar_encode(grammar_t self, production_t production, int offset)
-{
-    return offset * self -> production_count + production_get_index(production);
-}
-
-/* Answers the production and offset encoded by the integer */
-int grammar_decode(grammar_t self, int code, production_t *production_out)
-{
-    *production_out = self -> productions[code % self -> production_count];
-    return code / self -> production_count;
-}
 
 /* Inserts the go-to contribution of the encoded production/offset into the table */
 void grammar_compute_goto(grammar_t self, int **table, int code)
@@ -364,7 +519,23 @@ void grammar_compute_goto(grammar_t self, int **table, int code)
 /* Print out the kernels */
 void grammar_print_kernels(grammar_t self, FILE *out)
 {
-    fprintf(out, "{grammar_print_kernels()}\n");
+    int index;
+
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	int *pairs;
+	int count = kernel_get_pairs(self -> kernels[index], &pairs);
+	int j;
+
+	fprintf(out, "---\nkernel %d\n", index);
+	for (j = 0; j < count; j++)
+	{
+	    int pi;
+	    int offset = decode(self, pairs[j], &pi);
+	    production_print_with_offset(self -> productions[pi], out, offset);
+	    fprintf(out, "\n");
+	}
+    }
 }
 
 /* Pretty-prints the receiver */
