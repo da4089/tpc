@@ -31,7 +31,7 @@
 #define GRAMMAR_H
 
 #ifndef lint
-static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.10 1999/12/11 16:57:39 phelps Exp $";
+static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.11 1999/12/11 18:00:45 phelps Exp $";
 #endif /* lint */
 
 /* The grammar type */
@@ -46,6 +46,12 @@ void grammar_free(grammar_t self);
 
 /* Adds another production to the grammar */
 void grammar_add_production(grammar_t self, production_t production);
+
+/* Sets the grammar's set of terminals */
+void grammar_set_terminals(grammar_t self, int count, component_t *terminals);
+
+/* Sets the grammar's set of nonterminals */
+void grammar_set_nonterminals(grammar_t self, int count, component_t *nonterminals);
 
 /* Pretty-prints the receiver */
 void grammar_print(grammar_t self, FILE *out);

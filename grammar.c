@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.1 1999/12/11 16:56:22 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.2 1999/12/11 18:00:44 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -44,6 +44,18 @@ struct grammar
 
     /* The productions */
     production_t *productions;
+
+    /* The number of terminal symbols */
+    int terminal_count;
+
+    /* The terminal symbols */
+    component_t *terminals;
+
+    /* The number of nonterminal symbols */
+    int nonterminal_count;
+
+    /* The nonterminals */
+    component_t *nonterminals;
 };
 
 
@@ -61,6 +73,10 @@ grammar_t grammar_alloc()
     /* Initialize its contents to sane values */
     self -> production_count = 0;
     self -> productions = NULL;
+    self -> terminal_count = 0;
+    self -> terminals = NULL;
+    self -> nonterminal_count = 0;
+    self -> nonterminals = NULL;
     return self;
 }
 
@@ -69,9 +85,14 @@ void grammar_free(grammar_t self)
 {
     int index;
 
-    for (index = 0; index < self -> production_count; index++)
+    if (self -> productions != NULL)
     {
-	production_free(self -> productions[index]);
+	for (index = 0; index < self -> production_count; index++)
+	{
+	    production_free(self -> productions[index]);
+	}
+
+	free(self -> productions);
     }
 
     free(self);
@@ -83,6 +104,20 @@ void grammar_add_production(grammar_t self, production_t production)
     self -> productions = (production_t *)realloc(
 	self -> productions, (self -> production_count + 1) * sizeof(production_t));
     self -> productions[self -> production_count++] = production;
+}
+
+/* Sets the grammar's set of terminals */
+void grammar_set_terminals(grammar_t self, int count, component_t *terminals)
+{
+    self -> terminal_count = count;
+    self -> terminals = terminals;
+}
+
+/* Sets the grammar's set of nonterminals */
+void grammar_set_nonterminals(grammar_t self, int count, component_t *nonterminals)
+{
+    self -> nonterminal_count = count;
+    self -> nonterminals = nonterminals;
 }
 
 /* Pretty-prints the receiver */
