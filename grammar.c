@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.5 1999/12/13 04:19:04 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.6 1999/12/13 08:49:04 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -61,6 +61,11 @@ struct grammar
     /* A table of productions listed by their left-hand-side */
     production_t **productions_by_nonterminal;
 
+    /* The generates table.  Once initialized, generates[generator][generated]
+     * will be nonzero if the nonterminal[generator] can generate
+     * nonterminal[generated]. */
+    char **generates;
+
     /* The number of kernels in the receiver */
     int kernel_count;
 
@@ -68,25 +73,6 @@ struct grammar
     kernel_t *kernels;
 };
 
-
-/* Construct the set of LR(0) kernels */
-static void compute_lr0_kernels(grammar_t self)
-{
-    kernel_t seed = kernel_alloc(self, self -> productions[0]);
-    
-    /* FIX THIS: not done yet... */
-    kernel_get_goto_table(seed);
-}
-
-/* Compute the set of LALR(0) states */
-static void compute_lalr_states(grammar_t self)
-{
-    /* Compute the LR0 kernels */
-    compute_lr0_kernels(self);
-
-    printf("compute_lalr_states() not yet implemented\n");
-    exit(1);
-}
 
 
 /* Constructs a table mapping nonterminal indices to a null-terminated
@@ -169,6 +155,94 @@ static int verify_productions_by_nonterminal(grammar_t self)
     return result;
 }
 
+
+/* Indicate that the nonterminal `generator' spontaneously generates
+ * the nonterminal `generated' in the grammar */
+static void mark_generates(grammar_t self, int generator, int generated)
+{
+    int index;
+
+    /* Make sure the table entry exists */
+    if (self -> generates[generator] == NULL)
+    {
+	self -> generates[generator] = (char *)calloc(self -> nonterminal_count, sizeof(char));
+    }
+    else if (self -> generates[generator][generated] != 0)
+    {
+	return;
+    }
+
+    /* Set the flag */
+    self -> generates[generator][generated] = 1;
+
+    /* Propagate the flag to any nonterminal which generates us */
+    for (index = 0; index < self -> nonterminal_count; index++)
+    {
+	if (self -> generates[index] != NULL && self -> generates[index][generator] != 0)
+	{
+	    mark_generates(self, index, generated);
+	}
+    }
+
+    /* Propagate the flags to the nonterminal we've just generated */
+    if (self -> generates[generated] != NULL)
+    {
+	for (index = 0; index < self -> nonterminal_count; index++)
+	{
+	    if (self -> generates[generated][index] != 0)
+	    {
+		mark_generates(self, generator, index);
+	    }
+	}
+    }
+}
+
+/* Constructs the `generates' table */
+static void compute_generates(grammar_t self)
+{
+    int index;
+
+    /* Create the `generates' table */
+    self -> generates = (char **)calloc(self -> nonterminal_count, sizeof(char *));
+
+    /* Go through each of the productions and figure out which things generate which */
+    for (index = 0; index < self -> production_count; index++)
+    {
+	production_t production = self -> productions[index];
+	int nonterminal = production_get_nonterminal_index(production);
+	component_t component = production_get_component(production, 0);
+
+	if (component_is_nonterminal(component))
+	{
+	    mark_generates(self, nonterminal, component_get_index(component));
+	}
+    }
+}
+
+
+/* Adds a kernel_t to the array of kernels */
+void add_kernel(grammar_t self, kernel_t kernel)
+{
+    self -> kernels = (kernel_t *)realloc(
+	self -> kernels, (self -> kernel_count + 1) * sizeof(kernel_t));
+    self -> kernels[self -> kernel_count++] = kernel;
+}
+
+/* Computes the LR(0) kernels for the grammar */
+int compute_lr0_kernels(grammar_t self)
+{
+    kernel_t seed;
+
+    /* Construct the seed kernel */
+    if ((seed = kernel_alloc(self, self -> productions[0])) == NULL)
+    {
+	return -1;
+    }
+
+    /* Add it to the list of kernels */
+    add_kernel(self, seed);
+}
+
 /* Allocates and initializes a new nonterminal grammar_t */
 grammar_t grammar_alloc(
     int production_count, production_t *productions,
@@ -191,6 +265,9 @@ grammar_t grammar_alloc(
     self -> nonterminal_count = nonterminal_count;
     self -> nonterminals = nonterminals;
     self -> productions_by_nonterminal = NULL;
+    self -> generates = NULL;
+    self -> kernel_count = 0;
+    self -> kernels = NULL;
 
     /* Compute the productions_by_nonterminal */
     if ((self -> productions_by_nonterminal = 
@@ -203,8 +280,18 @@ grammar_t grammar_alloc(
 	return NULL;
     }
 
-    /* Make sure that it makes sense */
+    /* Make sure that every nonterminal has at least on production that generates it. */
     if (verify_productions_by_nonterminal(self) < 0)
+    {
+	grammar_free(self);
+	return NULL;
+    }
+
+    /* Compute the `generates' table */
+    compute_generates(self);
+
+    /* Compute the LR(0) kernels */
+    if (compute_lr0_kernels(self) < 0)
     {
 	grammar_free(self);
 	return NULL;
@@ -253,7 +340,8 @@ int grammar_get_component_count(grammar_t self)
     return self -> terminal_count + self -> nonterminal_count;
 }
 
-/* Construct a single number to represent a production_t and offset */
+/* Construct a single number to represent a production_t and offset.
+ * Construct them to order themselves nicely. */
 int grammar_encode(grammar_t self, production_t production, int offset)
 {
     return offset * self -> production_count + production_get_index(production);
@@ -283,6 +371,7 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 void grammar_print(grammar_t self, FILE *out)
 {
     int index;
+    char **row;
 
     /* Print out the productions by nonterminal table */
     for (index = 0; index < self -> nonterminal_count; index++)
@@ -299,6 +388,31 @@ void grammar_print(grammar_t self, FILE *out)
 		fprintf(out, "\n");
 	    }
 	}
+    }
+
+    /* Print out the generates table */
+    fprintf(out, "\n\ngenerates: (%p)\n", self -> generates);
+    for (row = self -> generates; row < self -> generates + self -> nonterminal_count; row++)
+    {
+	int j;
+
+	fprintf(out, "  ");
+	for (j = 0; j < self -> nonterminal_count; j++)
+	{
+	    if (*row == NULL)
+	    {
+		fprintf(out, "- ");
+	    }
+	    else if ((*row)[j] == 0)
+	    {
+		fprintf(out, "- ");
+	    }
+	    else
+	    {
+		fprintf(out, "X ");
+	    }
+	}
+	fprintf(out, "\n");
     }
 }
 
