@@ -1,11 +1,13 @@
-/* $Id: Parser.c,v 1.3 1999/02/08 13:06:00 phelps Exp $ */
+/* $Id: Parser.c,v 1.4 1999/02/08 16:32:04 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "Parser.h"
-#include "Terminal.h"
+#include "Grammar.h"
+#include "Production.h"
+#include "Component.h"
 #include "Nonterminal.h"
-#include "List.h"
+#include "Terminal.h"
 #include "Hash.h"
 
 /*
@@ -138,6 +140,9 @@ struct Parser_t
 
     /* The receiver's table of terminals */
     Hashtable terminals;
+
+    /* The receiver's List of Productions */
+    List productions;
 };
 
 
@@ -201,24 +206,16 @@ static void ShiftReduce(Parser self, TerminalType type, void *value)
 /* Reduction 0: <START> ::= <production> */
 static void Accept(Parser self)
 {
-    printf("Accept\n");
-
     Pop(self, 1);
-
-    /* Call the callback if there is one */
-    if (self -> callback != NULL)
-    {
-	(*self -> callback)(self -> context, NULL);
-    }
+    List_addLast(self -> productions, *(self -> value_top));
 }
 
 /* Reduction 1: <production> ::= nonterm derives <exp-list> stop */
 static void Reduce1(Parser self)
 {
+    Production production;
     Nonterminal nonterminal;
     List list;
-
-    printf("<production> ::= nonterm derives <exp-list> stop\n");
 
     /* Pop the old states */
     Pop(self, 4);
@@ -226,13 +223,12 @@ static void Reduce1(Parser self)
     /* FIX THIS: should do something with the stuff on the stack */
     nonterminal = (Nonterminal) self -> value_top[0];
     list = (List) self -> value_top[2];
-    Nonterminal_print(nonterminal, stdout);
-    printf("\n");
 
-    /* CREATE A PRODUCTION FROM NONTERMINAL AND LIST */
+    /* Create a Production from the Nonterminal and List of components */
+    production = Production_alloc(nonterminal, list);
 
     /* Go to the new state */
-    Push(self, gotoTable[Top(self)][ProductionValue], NULL);
+    Push(self, gotoTable[Top(self)][ProductionValue], production);
 }
 
 /* Reduction 2: <exp-list> ::= <exp-list> nonterm */
@@ -248,10 +244,6 @@ static void Reduce2(Parser self)
     list = self -> value_top[0];
     nonterminal = self -> value_top[1];
     List_addLast(list, nonterminal);
-
-    printf("+++ <exp-list> ::= <exp-list> nonterm [");
-    Nonterminal_print(nonterminal, stdout);
-    printf("]\n");
 
     /* Go to the new state */
     Push(self, gotoTable[Top(self)][ListValue], list);
@@ -271,10 +263,6 @@ static void Reduce3(Parser self)
     terminal = (Terminal) self -> value_top[1];
     List_addLast(list, terminal);
 
-    printf("+++ <exp-list> ::= <exp-list> term [");
-    Terminal_print(terminal, stdout);
-    printf("]\n");
-
     /* Go to the new state */
     Push(self, gotoTable[Top(self)][ListValue], list);
 }
@@ -292,10 +280,6 @@ static void Reduce4(Parser self)
     nonterminal = self -> value_top[0];
     list = List_alloc();
     List_addLast(list, nonterminal);
-
-    printf("+++ <exp-list> ::= nonterm [");
-    Nonterminal_print(nonterminal, stdout);
-    printf("]\n");
 
     /* Go to the new state */
     Push(self, gotoTable[Top(self)][ListValue], list);
@@ -315,11 +299,6 @@ static void Reduce5(Parser self)
     list = List_alloc();
     List_addLast(list, terminal);
 
-    printf("+++ <exp-list> ::= term [");
-    Terminal_print(terminal, stdout);
-    printf("]\n");
-
-
     /* Go to the new state */
     Push(self, gotoTable[Top(self)][ListValue], list);
 }
@@ -332,7 +311,6 @@ static Nonterminal FindOrCreateNonterminal(Parser self, char *name)
 
     if (nonterminal == NULL)
     {
-	printf("creating nonterminal %s\n", name);
 	nonterminal = Nonterminal_alloc(name, self -> nonterminal_count++);
 	Hashtable_put(self -> nonterminals, name, nonterminal);
     }
@@ -347,7 +325,6 @@ static Terminal FindOrCreateTerminal(Parser self, char *name)
 
     if (terminal == NULL)
     {
-	printf("creating terminal %s\n", name);
 	terminal = Terminal_alloc(name, self -> terminal_count++);
 	Hashtable_put(self -> terminals, name, terminal);
     }
@@ -383,6 +360,7 @@ Parser Parser_alloc(AcceptCallback callback, void *context)
     self -> nonterminals = Hashtable_alloc(101);
     self -> terminal_count = 0;
     self -> terminals = Hashtable_alloc(101);
+    self -> productions = List_alloc();
     return self;
 }
 
@@ -422,11 +400,15 @@ void Parser_acceptStop(Parser self)
 /* Updates the receiver's state based on the end of input */
 void Parser_acceptEOF(Parser self)
 {
-    fprintf(stderr, "*** Ouch!\n");
-    printf("non-terminals: %d\n", self -> nonterminal_count);
-    Hashtable_debug(self -> nonterminals);
-    printf("\nterminals: %d\n", self -> terminal_count);
-    Hashtable_debug(self -> terminals);
-    exit(1);
+    Grammar grammar = Grammar_alloc(
+	self -> productions,
+	self -> nonterminal_count,
+	self -> terminal_count);
+
+    /* Call the callback if there is one */
+    if (self -> callback != NULL)
+    {
+	(*self -> callback)(self -> context, grammar);
+    }
 }
 
