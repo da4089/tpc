@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.32 1999/02/19 05:59:41 phelps Exp $ */
+/* $Id: Grammar.c,v 1.33 1999/02/25 10:47:41 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -350,7 +350,7 @@ static void PrintReductionTable(Grammar self, FILE *out)
 	}
 
 	/* Print out a comment containing the production */
-	fprintf(out, "    /* ");
+	fprintf(out, "    /* %d: ", index);
 	Production_print(production, out);
 
 	/* Print out the table for the production */
