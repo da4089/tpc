@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.1 1999/12/11 16:12:22 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.2 1999/12/11 16:59:18 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -55,7 +55,7 @@ static component_t component_alloc(char *name, int index)
     component_t self;
     int length = strlen(name);
 
-    /* Allocate memory for the nonterminal_t */
+    /* Allocate memory for the component_t */
     if ((self = (component_t)malloc(sizeof(struct component) + length)) == NULL)
     {
 	return NULL;
@@ -90,7 +90,7 @@ int component_get_index(component_t self)
 /* Pretty-print function for a nonterminal */
 static void nonterminal_print(component_t self, FILE *out)
 {
-    fprintf(out, "<%s> ", self -> name);
+    fprintf(out, "%s ", self -> name);
 }
 
 /* Pretty-print function for a terminal */

@@ -31,7 +31,7 @@
 #define COMPONENT_H
 
 #ifndef lint
-static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.1 1999/12/11 16:12:23 phelps Exp $";
+static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.2 1999/12/11 16:59:18 phelps Exp $";
 #endif /* lint */
 
 /* The component type */
@@ -53,4 +53,4 @@ void component_print(component_t self, FILE *out);
 /* Returns the receiver's index */
 int component_get_index(component_t self);
 
-#endif /* NONTERMINAL_H */
+#endif /* GRAMMAR_H */
