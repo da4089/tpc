@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.31 1999/02/17 12:38:26 phelps Exp $ */
+/* $Id: Grammar.c,v 1.32 1999/02/19 05:59:41 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -567,6 +567,16 @@ void Grammar_computeGoto(Grammar self, List *table, int number)
 		if (self -> generates[index][j] != 0)
 		{
 		    List list = self -> productionsByNonterminal[j];
+
+		    /* Watch for errors */
+		    if (list == NULL)
+		    {
+			fprintf(stderr, "*** Undefined nonterminal: ");
+			Nonterminal_print(self -> nonterminals[j], stderr);
+			fprintf(stderr, "\n");
+			exit(0);
+		    }
+
 		    List_doWithWith(list, PopulateGotoTable, self, table);
 		}
 	    }
