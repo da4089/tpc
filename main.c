@@ -4,15 +4,15 @@
 #include "Grammar.h"
 
 /* Print the production rule */
-static void Frumble(void *ignored, Grammar grammar)
+static void Callback(void *ignored, Grammar grammar)
 {
-    Grammar_getLALRStates(grammar);
+    Grammar_printTable(grammar, stdout);
 }
 
 /* Parse args and go */
 int main(int argc, char *argv[])
 {
-    Lexer lexer = Lexer_alloc((AcceptCallback)Frumble, NULL);
+    Lexer lexer = Lexer_alloc((AcceptCallback)Callback, NULL);
     int ch;
 
     /* Read characters from stdin and give them to the Lexer */
