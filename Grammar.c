@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.16 1999/02/12 07:44:28 phelps Exp $ */
+/* $Id: Grammar.c,v 1.17 1999/02/12 08:58:22 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -361,6 +361,12 @@ int Grammar_productionCount(Grammar self)
     return self -> production_count;
 }
 
+/* Answers the indexed production */
+Production Grammar_getProduction(Grammar self, int index)
+{
+    return self -> productions[index];
+}
+
 
 
 /* Encodes a Production and offset in a single integer that sorts nicely */
@@ -516,6 +522,12 @@ void Grammar_getLALRStates(Grammar self)
     {
 	Kernel_propagatePrepare(self -> kernels[index]);
     }
+
+    /* Inject the EOF terminal into the root production */
+    Kernel_addFollowsTerminal(
+	self -> kernels[0],
+	Grammar_encode(self, self -> productions[0], 0),
+	self -> terminals[0]);
 
     /* Keep propagating the follows information until it stops changing */
     while (! isDone)
