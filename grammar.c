@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.18 1999/12/20 15:52:05 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.19 1999/12/21 00:22:22 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1141,7 +1141,7 @@ static void print_reduction_table(grammar_t self, FILE *out)
     /* Define the structure type */
     fprintf(out,
 	"struct production\n{\n"
-	"    void *(*function)();\n"
+	"    reduction_t reduction;\n"
 	"    int nonterm_type;\n"
 	"    int count;\n};\n\n");
 

@@ -31,7 +31,7 @@
 #define PRODUCTION_H
 
 #ifndef lint
-static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.5 1999/12/20 15:06:15 phelps Exp $";
+static const char cvs_PRODUCTION_H[] = "$Id: production.h,v 1.6 1999/12/21 00:22:23 phelps Exp $";
 #endif /* lint */
 
 /* The production type */
@@ -43,7 +43,7 @@ production_t production_alloc(
     component_t nonterminal,
     int component_count,
     component_t *components,
-    char *function);
+    char *reduction);
 
 /* Releases the resources consumed by the receiver */
 void production_free(production_t self);

@@ -1,4 +1,4 @@
-# $Id: grammar.pcg,v 1.8 1999/12/13 03:58:14 phelps Exp $
+# $Id: grammar.pcg,v 1.9 1999/12/21 00:22:22 phelps Exp $
 #
 # This file is part of tpc.
 #
@@ -38,7 +38,7 @@
 <production-list> ::= <production>
 	[make_production_list]
 
-<production> ::= <nonterminal> DERIVES <exp-list> <function>
+<production> ::= <nonterminal> DERIVES <exp-list> <reduction>
 	[make_production]
 
 <exp-list> ::= <exp-list> <nonterminal>
@@ -56,5 +56,5 @@
 <terminal> ::= ID
 	[make_terminal]
 
-<function> ::= LBRACKET ID RBRACKET
-	[make_function]
+<reduction> ::= LBRACKET ID RBRACKET
+	[make_reduction]

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.8 1999/12/20 15:52:05 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.9 1999/12/21 00:22:23 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -52,8 +52,8 @@ struct production
     /* The components */
     component_t *components;
 
-    /* The production's reduction function */
-    char *function;
+    /* The production's reduction */
+    char *reduction;
 };
 
 /* Allocates and initializes a new production_t */
@@ -62,7 +62,7 @@ production_t production_alloc(
     component_t nonterminal,
     int component_count,
     component_t *components,
-    char *function)
+    char *reduction)
 {
     production_t self;
 
@@ -77,7 +77,7 @@ production_t production_alloc(
     self -> nonterminal = nonterminal;
     self -> count = component_count;
     self -> components = components;
-    self -> function = function;
+    self -> reduction = reduction;
     return self;
 }
 
@@ -101,9 +101,9 @@ void production_free(production_t self)
 	free(self -> components);
     }
 
-    if (self -> function != NULL)
+    if (self -> reduction != NULL)
     {
-	free(self -> function);
+	free(self -> reduction);
     }
 
     free(self);
@@ -171,7 +171,7 @@ void production_print_with_offset(production_t self, FILE *out, int offset)
 void production_print_struct(production_t self, FILE *out)
 {
     fprintf(out, "    { %s, %d, %d }",
-	    self -> function,
+	    self -> reduction,
 	    component_get_index(self -> nonterminal),
 	    self -> count);
 }

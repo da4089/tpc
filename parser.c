@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.9 1999/12/20 15:52:05 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.10 1999/12/21 00:22:22 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -41,7 +41,7 @@ static const char cvsid[] = "$Id: parser.c,v 1.9 1999/12/20 15:52:05 phelps Exp 
 #include "grammar.h"
 #include "parser.h"
 
-typedef void *(*reduce_function_t )(parser_t self);
+typedef void *(*reduction_t)(parser_t self);
 
 /* Prototypes for the reduction functions */
 static void *accept_grammar(parser_t self);
@@ -52,7 +52,7 @@ static void *extend_exp_list(parser_t self);
 static void *make_exp_list(parser_t self);
 static void *make_nonterminal(parser_t self);
 static void *make_terminal(parser_t self);
-static void *make_function(parser_t self);
+static void *make_reduction(parser_t self);
 
 #include "pcg.h"
 
@@ -228,8 +228,8 @@ static int shift_reduce(parser_t self, terminal_t type, void *value)
 	/* Point the stack to the beginning of the components */
 	pop(self, production -> count);
 
-	/* Reduce by calling the production's reduction function */
-	if ((result = production -> function(self)) == NULL)
+	/* Reduce by calling the production's reduction */
+	if ((result = production -> reduction(self)) == NULL)
 	{
 	    fprintf(stderr, "reduce error\n");
 	    abort();
@@ -669,7 +669,7 @@ static void *make_production_list(parser_t self)
     return self -> productions;
 }
 
-/* <production> ::= <nonterminal> DERIVES <exp-list> <function> */
+/* <production> ::= <nonterminal> DERIVES <exp-list> <reduction> */
 static void *make_production(parser_t self)
 {
     production_t production;
@@ -726,8 +726,8 @@ static void *make_terminal(parser_t self)
     return terminal;
 }
 
-/* <function> ::= LBRACKET ID RBRACKET */
-static void *make_function(parser_t self)
+/* <reduction> ::= LBRACKET ID RBRACKET */
+static void *make_reduction(parser_t self)
 {
     return self -> value_top[1];
 }

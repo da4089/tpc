@@ -20,7 +20,7 @@ typedef enum
 
 struct production
 {
-    void *(*function)();
+    reduction_t reduction;
     int nonterm_type;
     int count;
 };
@@ -36,7 +36,7 @@ static struct production productions[11] =
     /* 2: <production-list> ::= <production> */
     { make_production_list, 1, 1 },
 
-    /* 3: <production> ::= <nonterminal> DERIVES <exp-list> <function> */
+    /* 3: <production> ::= <nonterminal> DERIVES <exp-list> <reduction> */
     { make_production, 2, 4 },
 
     /* 4: <exp-list> ::= <exp-list> <nonterminal> */
@@ -57,8 +57,8 @@ static struct production productions[11] =
     /* 9: <terminal> ::= ID */
     { make_terminal, 6, 1 },
 
-    /* 10: <function> ::= LBRACKET ID RBRACKET */
-    { make_function, 5, 3 }
+    /* 10: <reduction> ::= LBRACKET ID RBRACKET */
+    { make_reduction, 5, 3 }
 };
 
 #define ERR 0
