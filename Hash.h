@@ -45,6 +45,9 @@ void Hashtable_free(Hashtable self);
 
 
 
+/* Answers the number of entries in the Hashtable */
+unsigned int Hashtable_size(Hashtable self);
+
 /* Gets an entry from the Hashtable */
 void *Hashtable_get(Hashtable self, char *key);
 
@@ -58,8 +61,14 @@ void *Hashtable_remove(Hashtable self, char *key);
 /* Enumeration */
 void Hashtable_do(Hashtable self, void (*function)());
 
+/* Enumeration */
+void Hashtable_keysAndValuesDo(Hashtable self, void (*function)());
+
 /* Enumeration with context */
 void Hashtable_doWith(Hashtable self, void (*function)(), void *context);
+
+/* Enumeration */
+void Hashtable_keysAndValuesDoWith(Hashtable self, void (*function)(), void *context);
 
 
 /* Print debugging information to stdout */

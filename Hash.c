@@ -112,6 +112,12 @@ unsigned long Hashtable_hash(Hashtable self, char *key)
 }
 
 
+/* Answers the number of entries in the Hashtable */
+unsigned int Hashtable_size(Hashtable self)
+{
+    return self -> count;
+}
+
 /* Gets an entry from the Hashtable */
 void *Hashtable_get(Hashtable self, char *key)
 {
@@ -228,6 +234,23 @@ void Hashtable_do(Hashtable self, void (*function)(void *value))
     }
 }
 
+/* Enumeration */
+void Hashtable_keysAndValuesDo(Hashtable self, void (*function)(char *key, void *value))
+{
+    unsigned long index;
+    HashEntry entry, next;
+
+    for (index = 0; index < self -> size; index++)
+    {
+	entry = self -> table[index];
+	while (entry != NULL)
+	{
+	    next = entry -> next;
+	    (*function)(entry -> key, entry -> value);
+	    entry = next;
+	}
+    }
+}
 
 /* Enumeration with context */
 void Hashtable_doWith(Hashtable self, void (*function)(void *value, void *context), void *context)
@@ -248,6 +271,30 @@ void Hashtable_doWith(Hashtable self, void (*function)(void *value, void *contex
 	}
     }
 }
+
+/* Enumeration */
+void Hashtable_keysAndValuesDoWith(
+    Hashtable self,
+    void (*function)(char *key, void *value, void *context),
+    void *context)
+{
+    unsigned long index;
+    HashEntry entry, next;
+
+    for (index = 0; index < self -> size; index++)
+    {
+	entry = self -> table[index];
+
+	while (entry != NULL)
+	{
+	    /* remember next in case entry gets removed by (*function) */
+	    next = entry -> next;
+	    (*function)(entry -> key, entry -> value, context);
+	    entry = next;
+	}
+    }
+}
+
 
 
 /* Print debugging information to stdout */
