@@ -31,7 +31,7 @@
 #define KERNEL_H
 
 #ifndef lint
-static const char cvs_KERNEL_H[] = "$Id: kernel.h,v 1.1 1999/12/13 02:25:56 phelps Exp $";
+static const char cvs_KERNEL_H[] = "$Id: kernel.h,v 1.2 1999/12/13 16:51:52 phelps Exp $";
 #endif /* lint */
 
 /* The kernel type */
@@ -39,12 +39,18 @@ typedef struct kernel *kernel_t;
 
 
 /* Allocates and initializes a new kernel_t */
-kernel_t kernel_alloc();
+kernel_t kernel_alloc(int count, int *pairs);
 
 /* Releases the resources consumed by the receiver */
 void kernel_free(kernel_t self);
 
-/* Returns the Kernel's goto table */
-kernel_t kernel_get_goto_table(kernel_t self);
+/* Returns nonzero if the kernel matches the pairs */
+int kernel_matches(kernel_t self, int count, int *pairs);
+
+/* Returns the kernel's pairs */
+int kernel_get_pairs(kernel_t self, int **pairs_out);
+
+/* Sets the receiver's goto table */
+void kernel_set_goto_table(kernel_t self, int *goto_table);
 
 #endif /* KERNEL_H */

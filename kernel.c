@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: kernel.c,v 1.1 1999/12/13 02:25:56 phelps Exp $";
+static const char cvsid[] = "$Id: kernel.c,v 1.2 1999/12/13 16:51:52 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -40,91 +40,83 @@ static const char cvsid[] = "$Id: kernel.c,v 1.1 1999/12/13 02:25:56 phelps Exp 
 
 struct kernel
 {
-    /* The kernel's grammar */
-    grammar_t grammar;
-
-    /* The kernel's index */
-    int index;
-
-    /* The kernel's go-to table */
-    kernel_t *goto_table;
-
-    /* The propagates tables of kernel items */
-    char *propagates;
-
-    /* The follows table */
-    char *follows;
-
     /* The propagates table of kernel items */
     int count;
 
     /* The kernel's encoded production/offset pairs */
-    int pairs[1];
+    int *pairs;
+
+    /* The kernel's go-to table */
+    int *goto_table;
 };
 
-
-/* Allocates space for a kernel with `count' productions */
-kernel_t do_alloc(grammar_t grammar, int count)
+/* Allocates and initializes a new kernel_t containing the given pairs */
+kernel_t kernel_alloc(int count, int *pairs)
 {
     kernel_t self;
 
-    /* Allocate some space for the receiver */
-    if ((self = (kernel_t)malloc(sizeof(struct kernel) + count * sizeof(int))) == NULL)
+    /* Allocate some space for the new kernel_t */
+    if ((self = (kernel_t)malloc(sizeof(struct kernel))) == NULL)
     {
 	return NULL;
     }
 
     /* Initialize its contents to sane values */
-    self -> grammar = grammar;
-    self -> index = 0;
-    self -> goto_table = NULL;
-    self -> propagates = NULL;
-    self -> follows = NULL;
     self -> count = count;
-    return self;
-}
-
-/* Allocates and initializes a new kernel_t containing the given production */
-kernel_t kernel_alloc(grammar_t grammar, production_t production)
-{
-    kernel_t self;
-
-    /* Allocate some space for the new kernel_t */
-    if ((self = do_alloc(grammar, 1)) == NULL)
-    {
-	return NULL;
-    }
-
-    /* Record our production/offset */
-    self -> pairs[0] = grammar_encode(grammar, production, 0);
+    self -> pairs = pairs;
+    self -> goto_table = NULL;
     return self;
 }
 
 /* Releases the resources consumed by the receiver */
 void kernel_free(kernel_t self)
 {
+    if (self -> pairs != NULL)
+    {
+	free(self -> pairs);
+    }
+
+    if (self -> goto_table != NULL)
+    {
+	free(self -> goto_table);
+    }
+
     free(self);
 }
 
-/* Returns the Kernel's goto table */
-kernel_t kernel_get_goto_table(kernel_t self)
+/* Returns nonzero if the kernel matches the pairs */
+int kernel_matches(kernel_t self, int count, int *pairs)
 {
-    int count;
-    int **table;
     int index;
 
-    /* Allocate space for the table */
-    count = grammar_get_component_count(self -> grammar);
-    table = (int **)calloc(count, sizeof(int *));
-
-    /* Go through each production/offset in the kernel and compute its
-     * contribution to the go-to table */
-    for (index = 0; index < self -> count; index++)
+    /* Do the easy test first */
+    if (self -> count != count)
     {
-	grammar_compute_goto(self -> grammar, table, self -> pairs[index]);
+	return 0;
     }
 
-    /* Print out the resulting tables */
-    printf("kernel_get_goto_table(): hello sailor\n");
-    abort();
+    /* Go through and compare element by element */
+    for (index = 0; index < count; index++)
+    {
+	if (self -> pairs[index] != pairs[index])
+	{
+	    return 0;
+	}
+    }
+
+    /* The match! */
+    return 1;
+}
+
+/* Returns the kernel's pairs */
+int kernel_get_pairs(kernel_t self, int **pairs_out)
+{
+    *pairs_out = self -> pairs;
+    return self -> count;
+}
+
+/* Sets the receiver's goto table */
+void kernel_set_goto_table(kernel_t self, int *goto_table)
+{
+    self -> goto_table = goto_table;
 }
