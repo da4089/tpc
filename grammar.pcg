@@ -1,9 +1,9 @@
-<grammar> ::= <production-list> .
+<START> ::= <production-list> .
 
 <production-list> ::= <production-list> <production> .
 <production-list> ::= <production> .
 
-<production> ::= nonterm derives <exp-list> stop .
+<production> ::= nonterm derives <exp-list> function .
 
 <exp-list> ::= <exp-list> nonterm .
 <exp-list> ::= <exp-list> term .
