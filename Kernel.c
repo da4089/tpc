@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.18 1999/02/22 00:17:32 phelps Exp $ */
+/* $Id: Kernel.c,v 1.19 1999/02/22 00:44:11 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -330,6 +330,28 @@ static void PrintFollowsSet(Kernel self, int index, FILE *out)
 }
 
 
+/* Answers the production in the receiver with the lowest index */
+static int GetFirstProductionIndex(Kernel self)
+{
+    int index;
+    int result = Grammar_productionCount(self -> grammar);
+
+    /* Go through the kernel productions */
+    for (index = 0; index < self -> count; index++)
+    {
+	Production production;
+
+	Grammar_decode(self -> grammar, self -> pairs[index], &production);
+	if (Production_getIndex(production) < result)
+	{
+	    result = Production_getIndex(production);
+	}
+    }
+
+    return result;
+}
+
+
 /*
  *
  * Exported functions
@@ -653,6 +675,7 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 			fprintf(stderr, "*** Warning: reduce/reduce conflict on ");
 			Terminal_print(Grammar_getTerminal(self -> grammar, tid), stderr);
 			fprintf(stderr, "in kernel %d\n", self -> index);
+			fprintf(stderr, "    [using first listed reduction]\n");
 			Kernel_debug(self, stderr);
 		    }
 		    else
@@ -689,14 +712,37 @@ void Kernel_printSRTableEntry(Kernel self, FILE *out)
 	    /* Watch for shift/reduce conflicts and default to shift */
 	    if (reduction != -1)
 	    {
+		int sindex;
+
 		fprintf(stderr, "*** Warning: shift/reduce conflict on ");
 		Terminal_print(Grammar_getTerminal(self -> grammar, index), stderr);
 		fprintf(stderr, "in kernel %d\n", self -> index);
+
+		/* Resolve the conflict according to the order of
+		 * productions in the grammar */
+		sindex = GetFirstProductionIndex(Grammar_getKernel(self -> grammar, shift));
+
+		if (reduction < sindex)
+		{
+		    /* We can never have a shift/reduce conflict for
+		     * the accept state since we can never shift
+		     * EOF, so don't worry about reduction == 0 */
+		    fprintf(out, "R(%d)", reduction);
+		    fprintf(stderr, "    [choosing to reduce]\n");
+		}
+		else
+		{
+		    fprintf(out, "S(%d)", shift);
+		    fprintf(stderr, "    [choosing to shift]\n");
+		}
+
 		Kernel_debug(self, stderr);
 	    }
-
-	    /* Print out a shift */
-	    fprintf(out, "S(%d)", shift);
+	    else
+	    {
+		/* Print out a shift */
+		fprintf(out, "S(%d)", shift);
+	    }
 	}
 
 	/* Check for an accept */
