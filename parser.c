@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.6 1999/12/11 18:17:57 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.7 1999/12/13 02:24:56 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -606,14 +606,16 @@ static void *accept_grammar(parser_t self)
     grammar_t grammar = (grammar_t)self -> value_top[0];
 
     /* Finalize construction of the grammar */
-    grammar_set_terminals(grammar, self -> terminal_count, self -> terminals);
-    self -> terminal_count = 0;
+    grammar_set_components(
+	grammar,
+	self -> terminal_count,
+	self -> terminals,
+	self -> nonterminal_count,
+	self -> nonterminals);
+
+    /* Null out the terminals and nonterminals so that we don't accidentally free them */
     self -> terminals = NULL;
-
-    grammar_set_nonterminals(grammar, self -> nonterminal_count, self -> nonterminals);
-    self -> nonterminal_count = 0;
     self -> nonterminals = NULL;
-
     return grammar;
 }
 
@@ -654,8 +656,6 @@ static void *make_production(parser_t self)
 
     production_set_nonterminal(production, component);
     production_set_function(production, function);
-    production_print(production, stdout);
-    printf("\n");
     return production;
 }
 
