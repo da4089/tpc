@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.6 1999/02/11 07:42:10 phelps Exp $ */
+/* $Id: Kernel.c,v 1.7 1999/02/11 07:56:48 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,6 +47,7 @@ Kernel Alloc(Grammar grammar, int count)
 
     /* Set up some initial values */
     self -> grammar = grammar;
+    self -> index = 0;
     self -> count = count;
 
     /* IT'S UP TO THE CALLER TO INITIALIZE THE PAIRS */
