@@ -1,4 +1,4 @@
-/* $Id: Terminal.c,v 1.3 1999/02/08 19:44:39 phelps Exp $ */
+/* $Id: Terminal.c,v 1.4 1999/02/11 01:46:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +34,13 @@ int False(Terminal self)
 /* Pretty-prints the receiver */
 void Print(Terminal self, FILE *out)
 {
-    fprintf(out, "%s ", self -> name);
+    fprintf(out, "%s[%d] ", self -> name, self -> index);
+}
+
+/* Marks the terminals which can appear as the first element of the receiver */
+void MarkFirst(Terminal self, Grammar grammar, char *table)
+{
+    table[self -> index] = 1;
 }
 
 
@@ -42,7 +48,8 @@ void Print(Terminal self, FILE *out)
 static ComponentFunctions functions =
 {
     (PrintMethod) Print,
-    (IsNonterminalMethod) False
+    (IsNonterminalMethod) False,
+    (MarkFirstMethod) MarkFirst
 };
 
 

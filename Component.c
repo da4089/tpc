@@ -1,4 +1,4 @@
-/* $Id: Component.c,v 1.1 1999/02/08 16:30:37 phelps Exp $ */
+/* $Id: Component.c,v 1.2 1999/02/11 01:46:11 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,4 +20,10 @@ void Component_print(Component self, FILE *out)
 int Component_isNonterminal(Component self)
 {
     return (self -> functions.isNonterminal)(self);
+}
+
+/* Marks the terminals which can appear as the first element of the receiver */
+void Component_markFirst(Component self, Grammar grammar, char *table)
+{
+    (self -> functions.markFirst)(self, grammar, table);
 }

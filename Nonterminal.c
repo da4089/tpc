@@ -1,4 +1,4 @@
-/* $Id: Nonterminal.c,v 1.2 1999/02/08 16:31:23 phelps Exp $ */
+/* $Id: Nonterminal.c,v 1.3 1999/02/11 01:46:12 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,16 +26,24 @@ struct Nonterminal_t
  */
 
 /* Always returns true */
-int True(Nonterminal self)
+static int True(Nonterminal self)
 {
     return 1;
+}
+
+/* Marks the terminals which can appear as the first element of the receiver */
+static void MarkFirst(Nonterminal self, Grammar grammar, char *table)
+{
+    printf("*** MarkFirst(Nonterminal, Grammar, char *) not implemented!\n");
+    exit(1);
 }
 
 /* The method table */
 static ComponentFunctions functions =
 {
     (PrintMethod) Nonterminal_print,
-    (IsNonterminalMethod) True
+    (IsNonterminalMethod) True,
+    (MarkFirstMethod) MarkFirst
 };
 
 
