@@ -1,3 +1,7 @@
+Overview of changes in tpc-0.6
+
+* It is now possible to generate the tables in a python-friendly format.
+
 Overview of changes in tpc-0.5.3
 
 * Forgot to adjust the version number.
