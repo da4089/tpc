@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.21 1999/02/16 07:03:11 phelps Exp $ */
+/* $Id: Grammar.c,v 1.22 1999/02/16 08:39:19 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -290,6 +290,36 @@ void ComputeLALRStates(Grammar self)
     }
 }
 
+
+/* Prints out some macros for accessing the tables */
+static void PrintMacros(Grammar self, FILE *out)
+{
+    fprintf(out, "#define IS_ERROR(action) ((action) == 0)\n");
+    fprintf(out, "#define IS_REDUCE(action) ((action) < %d)\n", self -> production_count);
+    fprintf(out, "#define IS_SHIFT(action) (! IS_REDUCE(action))\n");
+    fprintf(out, "#define REDUCTION(action) (action)\n");
+    fprintf(out, "#define REDUCE_GOTO(state, action) (goto_table[state][production_type[REDUCTION(action)]])\n");
+    fprintf(out, "#define SHIFT_GOTO(action) ((action) - %d)\n", self -> production_count);
+}
+
+/* Prints an enumeration which lists the various terminal types */
+static void PrintTerminalEnum(Grammar self, FILE *out)
+{
+    int index;
+
+    /* Print the enum header */
+    fputs("typedef enum\n{\n", out);
+
+    for (index = 0; index < self -> terminal_count; index++)
+    {
+	fputs("    ", out);
+	Terminal_printEnum(self -> terminals[index], out);
+	fputs(",\n", out);
+    }
+
+    fputs("} terminal_t;\n\n", out);
+}
+
 /* Prints the production_type table */
 static void PrintProductionTypeTable(Grammar self, FILE *out)
 {
@@ -357,30 +387,6 @@ static void PrintGotoTable(Grammar self, FILE *out)
 
     /* Close off the goto table */
     fputs("};\n\n", out);
-}
-
-/* Prints out the ShiftReduce function */
-static void PrintShiftReduceFunction(Grammar self, FILE *out)
-{
-    /* Define a function to deal with next input token */
-    fputs("static void ShiftReduce(int ttype, void *tdata, void *rock)\n{\n", out);
-    fputs("    int action;\n\n", out);
-    fprintf(out, "    while ((action = sr_table[Top(rock)][ttype]) < %d)\n    {\n",
-	    self -> production_count);
-    fputs("\tint reduction;\n", out);
-    fputs("\tint state;\n\n", out);
-    fputs("\tif (action == 0)\n\t{\n", out);
-    fputs("\t    Error(rock, ttype, tdata);\n", out);
-    fputs("\t    return;\n\t}\n\n", out);
-    fprintf(out, "\treduction = action / %d;\n", self -> production_count);
-    fputs("\tstate = goto_table[Top(rock)][production_type[reduction]];\n", out);
-    fputs("\tReduce(rock, reduction, state);\n", out);
-    fputs("    }\n\n", out);
-    fputs("    if ((ttype == 0) && (Top(rock) == 1))\n    {\n", out);
-    fputs("\tAccept(rock);\n", out);
-    fputs("    }\n\n", out);
-    fprintf(out, "    Shift(rock, ttype, tdata, action %% %d);\n", self -> production_count);
-    fputs("}\n\n", out);
 }
 
 
@@ -652,8 +658,9 @@ void Grammar_printTable(Grammar self, FILE *out)
     /* Compute the LALR states */
     ComputeLALRStates(self);
 
+    PrintMacros(self, out);
+    PrintTerminalEnum(self, out);
     PrintProductionTypeTable(self, out);
     PrintShiftReduceTable(self, out);
     PrintGotoTable(self, out);
-    PrintShiftReduceFunction(self, out);
 }
