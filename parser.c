@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.3 1999/12/11 16:58:19 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.4 1999/12/11 17:36:33 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -85,6 +85,9 @@ struct parser
 
     /* The top of the value stack */
     void **value_top;
+
+    /* The line currently being read */
+    int line;
 
     /* The parser's current lexical state */
     lexer_state_t lex_state;
@@ -233,20 +236,25 @@ static int shift_reduce(parser_t self, terminal_t type, void *value)
 /*	return self -> result = accept_grammar(self) != NULL;*/
     }
 
-    /* Everything else is an error */
-    fprintf(stderr, "*** Parse error [state=%d, type=%d]\n", top(self), type);
+    /* Watch for errors */
+    if (IS_ERROR(action))
+    {
+	fprintf(stderr, "parse error on line %d [state=%d, type=%d]\n", self -> line, top(self), type);
 /*    clean_stack(self);*/
+    }
     return 0;
 }
 
 static int accept_eof(parser_t self)
 {
-    return shift_reduce(self, TT_EOF, NULL);
+    int result = shift_reduce(self, TT_EOF, NULL);
+    self -> line = 1;
+    return result;
 }
 
 static int accept_error(parser_t self, char *token)
 {
-    printf("ERROR: %s\n", token);
+    printf("ERROR: invalid token on line %d: %s\n", self -> line, token);
     abort();
 }
 
@@ -415,7 +423,7 @@ static int lex_comment(parser_t self, int ch)
     /* Watch for newline */
     if (ch == '\n')
     {
-	self -> lex_state = lex_start;
+	return lex_start(self, ch);
 	return 0;
     }
 
@@ -692,6 +700,7 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
     self -> state_top = NULL;
     self -> value_stack = NULL;
     self -> value_top = NULL;
+    self -> line = 1;
     self -> lex_state = lex_start;
     self -> token = NULL;
     self -> token_end = NULL;
@@ -764,43 +773,21 @@ int parser_parse(parser_t self, unsigned char *buffer, size_t length)
     /* Otherwise send each character through the lexer */
     for (pointer = buffer; pointer < buffer + length; pointer++)
     {
-	if (self -> lex_state(self, *pointer) < 0)
+	int ch;
+
+	if (self -> lex_state(self, ch = *pointer) < 0)
 	{
 	    self -> lex_state = lex_start;
 	    return -1;
+	}
+
+	/* Keep track of linefeeds */
+	if (ch == '\n')
+	{
+	    self -> line++;
 	}
     }
 
     return 0;
 }
 
-#include <unistd.h>
-int main(int argc, char *argv[])
-{
-    parser_t parser;
-
-    if ((parser = parser_alloc(NULL, NULL)) == NULL)
-    {
-	perror("parser_alloc(): failed");
-	abort();
-    }
-
-    while (1)
-    {
-	char buffer[2048];
-	ssize_t length;
-
-	if ((length = read(STDIN_FILENO, buffer, 2048)) < 0)
-	{
-	    perror("read(): failed");
-	    abort();
-	}
-
-	parser_parse(parser, buffer, length);
-
-	if (length == 0)
-	{
-	    return 0;
-	}
-    }
-}
