@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.24 1999/02/16 11:10:34 phelps Exp $ */
+/* $Id: Grammar.c,v 1.25 1999/02/16 12:34:33 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -298,8 +298,8 @@ static void PrintMacros(Grammar self, FILE *out)
     fprintf(out, "#define IS_REDUCE(action) ((action) < %d)\n", self -> production_count);
     fprintf(out, "#define IS_SHIFT(action) (! IS_REDUCE(action))\n");
     fprintf(out, "#define REDUCTION(action) (action)\n");
-    fprintf(out, "#define REDUCE_GOTO(state, action) \\\n");
-    fprintf(out, "    (goto_table[state][production_type[REDUCTION(action)]])\n");
+    fprintf(out, "#define REDUCE_GOTO(state, production) \\\n");
+    fprintf(out, "    (goto_table[state][production -> nonterm_type])\n");
     fprintf(out, "#define SHIFT_GOTO(action) ((action) - %d)\n\n", self -> production_count);
 }
 
@@ -326,17 +326,38 @@ static void PrintReductionTable(Grammar self, FILE *out)
 {
     int index;
 
+    /* Define the structure type */
+    fprintf(out, "struct production\n{\n");
+    fprintf(out, "    void *(*function)();\n");
+    fprintf(out, "    int nonterm_type;\n");
+    fprintf(out, "    int count;\n};\n\n");
+
     /* Print the table header */
-    fprintf(out, "static void (*productions[%d])() =\n{\n", self -> production_count);
+    fprintf(out, "static struct production productions[%d] =\n{\n", self -> production_count);
 
     /* Print the production functions */
     for (index = 0; index < self -> production_count; index++)
     {
-	fprintf(out, "    %s,\n", Production_getFunction(self -> productions[index]));
+	Production production = self -> productions[index];
+
+	if (index != 0)
+	{
+	    fprintf(out, ",\n\n");
+	}
+
+	/* Print out a comment containing the production */
+	fprintf(out, "    /* ");
+	Production_print(production, out);
+
+	/* Print out the table for the production */
+	fprintf(out, "*/\n    { %s, %d, %d }",
+		Production_getFunction(production),
+		Production_getNonterminalIndex(production),
+		Production_getCount(production));
     }
 
     /* Print the table footer */
-    fprintf(out, "};\n\n");
+    fprintf(out, "\n};\n\n");
 }
 
 /* Prints the production_type table */
@@ -680,7 +701,6 @@ void Grammar_printTable(Grammar self, FILE *out)
     PrintMacros(self, out);
     PrintTerminalEnum(self, out);
     PrintReductionTable(self, out);
-    PrintProductionTypeTable(self, out);
     PrintShiftReduceTable(self, out);
     PrintGotoTable(self, out);
 }
