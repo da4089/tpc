@@ -5,7 +5,6 @@ tpc_SOURCES = \
 	component.h component.c \
 	production.h production.c \
 	grammar.h grammar.c \
-	kernel.h kernel.c \
 	parser.h parser.c \
 	getopt.h getopt.c getopt1.c \
 	main.c
