@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.14 1999/02/19 06:59:29 phelps Exp $ */
+/* $Id: Parser.c,v 1.15 1999/03/02 14:30:54 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,6 +133,43 @@ static void DecodeTerminal(char *key, Terminal terminal, Terminal *array)
 }
 
 
+/* Prints out the name of a terminal type */
+static void PrintTerminalType(terminal_t terminal, FILE *out)
+{
+    switch (terminal)
+    {
+	case TT_EOF:
+	{
+	    fprintf(out, "EOF");
+	    break;
+	}
+
+	case TT_nonterm:
+	{
+	    fprintf(out, "nonterminal");
+	    break;
+	}
+
+	case TT_derives:
+	{
+	    fprintf(out, "\"::=\"");
+	    break;
+	}
+
+	case TT_function:
+	{
+	    fprintf(out, "[function]");
+	    break;
+	}
+
+	case TT_term:
+	{
+	    fprintf(out, "terminal");
+	    break;
+	}
+    }
+}
+
 
 /* Perform all possible reductions and finally shift in the terminal */
 static void ShiftReduce(Parser self, terminal_t type, void *value)
@@ -178,8 +215,52 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
     /* Watch for errors */
     if (IS_ERROR(action))
     {
-	fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
-	exit(0);
+	int first = TT_EOF;
+	int last = TT_term;
+
+	/* Locate the first acceptable nonterminal */
+	while ((first <= last) && (IS_ERROR(sr_table[state][first])))
+	{
+	    first++;
+	}
+
+	/* Locate the last acceptable nonterminal */
+	while ((first <= last) && (IS_ERROR(sr_table[state][last])))
+	{
+	    last--;
+	}
+
+	fprintf(stderr, "*** Syntax Error: expected ");
+
+	/* If only one terminal type is acceptable, then print it */
+	if (first == last)
+	{
+	    PrintTerminalType(first, stderr);
+	    fprintf(stderr, " ");
+	}
+	/* Otherwise, print a comma-separated list */
+	else
+	{
+	    while (first <= last)
+	    {
+		if (! IS_ERROR(sr_table[state][first]))
+		{
+		    PrintTerminalType(first, stderr);
+
+		    if (first != last)
+		    {
+			fprintf(stderr, ", ");
+		    }
+		}
+
+		first++;
+	    }
+	}
+
+	fprintf(stderr, "got ");
+	PrintTerminalType(type, stderr);
+	fprintf(stderr, "\n");
+	exit(1);
     }
 }
 
