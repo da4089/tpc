@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.21 2000/03/15 05:42:14 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.22 2000/06/06 00:17:35 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1203,12 +1203,13 @@ static int first_production_index(grammar_t self, kernel_t kernel)
 /* Prints out the contribution of a kernel to the SR table */
 static void print_kernel_SR_entry(
     grammar_t self,
-    kernel_t kernel,
+    int kernel_index,
     char *lparen,
     char *rparen,
     char *separator,
     FILE *out)
 {
+    kernel_t kernel = self -> kernels[kernel_index];
     int *reductions;
     int index;
 
@@ -1277,7 +1278,7 @@ static void print_kernel_SR_entry(
 
 		fprintf(stderr, "*** Warning: shift/reduce conflict on ");
 		component_print(self -> terminals[index], stderr);
-		fprintf(stderr, "in kernel %d\n", ki);
+		fprintf(stderr, "in kernel %d\n", kernel_index);
 
 		/* Resolve the conflict according to the order of the
 		 * productions in the grammar.  Figure out which
@@ -1295,7 +1296,7 @@ static void print_kernel_SR_entry(
 		}
 
 		/* Print the kernel for reference */
-		print_kernel(self, ki, stderr);
+		print_kernel(self, kernel_index, stderr);
 	    }
 	    else
 	    {
@@ -1354,7 +1355,7 @@ static void print_c_shift_reduce_table(grammar_t self, FILE *out)
 	    fprintf(out, ",\n");
 	}
 
-	print_kernel_SR_entry(self, self -> kernels[index], "{ ", " }", ", ", out);
+	print_kernel_SR_entry(self, index, "{ ", " }", ", ", out);
     }
 
     /* Close off the SR table and undefine our macros */
@@ -1483,7 +1484,6 @@ static void print_python_reductions(grammar_t self, char *module, FILE *out)
 /* Prints out the shift-reduce table in python format */
 static void print_python_shift_reduce_table(grammar_t self, FILE *out)
 {
-    int max = self -> production_count + self -> kernel_count;
     int index;
 
     /* Print out some functions which help generate tables */
@@ -1506,7 +1506,7 @@ static void print_python_shift_reduce_table(grammar_t self, FILE *out)
 	    fprintf(out, ",\n");
 	}
 
-	print_kernel_SR_entry(self, self -> kernels[index], "(", ")", ", ", out);
+	print_kernel_SR_entry(self, index, "(", ")", ", ", out);
     }
 
     fprintf(out, ")\n\n");
