@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.23 2000/07/27 06:01:26 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.24 2000/07/27 06:04:00 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1241,7 +1241,7 @@ static void print_kernel_SR_entry(
 			component_print(self -> terminals[i], stderr);
 			fprintf(stderr, "in kernel %d\n", kernel_index);
 			fprintf(stderr, "  [using first listed reduction]\n");
-			print_kernel(self, index, stderr);
+			print_kernel(self, kernel_index, stderr);
 		    }
 		    else
 		    {
