@@ -28,11 +28,12 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.8 1999/12/13 18:06:50 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.9 1999/12/14 02:49:47 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "component.h"
 #include "production.h"
 #include "grammar.h"
@@ -222,23 +223,14 @@ static void compute_generates(grammar_t self)
 /* Encode a production number and offset in a single integer. */
 static int encode(grammar_t self, int index, int offset)
 {
-#ifdef FAST
-    return self -> production_count * offset + index;
-#else
     return self -> production_count * (offset + 1) - index - 1;
-#endif
 }
 
 /* Decodes an integer into an production number and offset */
 static int decode(grammar_t self, int code, int *index_out)
 {
-#ifdef FAST
-    *index_out = code % self -> production_count;
-      return code / self -> production_count;
-#else
     *index_out = self -> production_count - (code % self -> production_count) - 1;
     return code / self -> production_count;
-#endif
 }
 
 
@@ -281,25 +273,35 @@ static void add_pairs_entry(int *counts, int **table, int index, int pair)
 {
     int i;
 
-    /* See if the pair is already present (and check order) */
-    for (i = 0; i < counts[index]; i++)
+    /* Figure out where to add the entry (common case is at the end so
+     * we count backwards) */
+    for (i = counts[index]; i > 0; i--)
     {
-	if (table[index][i] == pair)
+	/* If it's already there then bail out now */
+	if (pair == table[index][i - 1])
 	{
 	    return;
 	}
 
-#ifndef FAST
-	if (table[index][i] <= pair)
+	/* Is this where we should insert? */
+	if (pair < table[index][i - 1])
 	{
-	    fprintf(stderr, "out of order insert!\n");
-	    abort();
+	    break;
 	}
-#endif	
     }
 
+    /* Expand the table */
     table[index] = (int *)realloc(table[index], (counts[index] + 1) * sizeof(int));
-    table[index][counts[index]++] = pair;
+
+    /* See if we need to make a hole */
+    if (i != counts[index])
+    {
+	memmove(table[index] + i + 1, table[index] + i, sizeof(int) * (counts[index] - i));
+    }
+
+    /* Insert the pair */
+    table[index][i] = pair;
+    counts[index]++;
 }
 
 /* Returns the index to use for the given component */
