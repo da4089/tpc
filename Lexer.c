@@ -1,4 +1,4 @@
-/* $Id: Lexer.c,v 1.2 1999/02/08 08:43:27 phelps Exp $ */
+/* $Id: Lexer.c,v 1.3 1999/02/08 09:24:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +8,9 @@
 /* The Lexer data structure */
 struct Lexer_t
 {
+    /* The receiver's parser */
+    Parser parser;
+
     /* The receiver's current state */
     int state;
 
@@ -28,7 +31,7 @@ static void StartToken(Lexer self, int ch)
     /* End of file? */
     if (ch == EOF)
     {
-	printf("EOF\n");
+	Parser_acceptEOF(self -> parser);
 	return;
     }
 
@@ -107,7 +110,7 @@ static void ReadDerives2(Lexer self, int ch)
 /* Read '::=*' */
 static void AcceptDerives(Lexer self, int ch)
 {
-    printf("DERIVES [::=]\n");
+    Parser_acceptDerives(self -> parser);
 
     self -> state = 0;
     Lexer_acceptChar(self, ch);
@@ -149,7 +152,7 @@ static void ReadNonterminalName2(Lexer self, int ch)
 /* Accept a nonterminal token */
 static void AcceptNonterminal(Lexer self, int ch)
 {
-    printf("NONTERMINAL [<%s>]\n", StringBuffer_getBuffer(self -> buffer));
+    Parser_acceptNonterminal(self -> parser, StringBuffer_getBuffer(self -> buffer));
 
     self -> state = 0;
     Lexer_acceptChar(self, ch);
@@ -165,7 +168,7 @@ static void ReadTerminal(Lexer self, int ch)
 	return;
     }
 
-    printf("TERMINAL [%s]\n", StringBuffer_getBuffer(self -> buffer));
+    Parser_acceptTerminal(self -> parser, StringBuffer_getBuffer(self -> buffer));
 
     self -> state = 0;
     Lexer_acceptChar(self, ch);
@@ -174,7 +177,7 @@ static void ReadTerminal(Lexer self, int ch)
 /* Accept an end-of-production character */
 static void AcceptStop(Lexer self, int ch)
 {
-    printf("STOP\n");
+    Parser_acceptStop(self -> parser);
 
     self -> state = 0;
     Lexer_acceptChar(self, ch);
@@ -188,7 +191,7 @@ static void AcceptStop(Lexer self, int ch)
  */
 
 /* Answers a new Lexer */
-Lexer Lexer_alloc(void *callback, void *context)
+Lexer Lexer_alloc(AcceptCallback callback, void *context)
 {
     Lexer self;
 
@@ -200,6 +203,7 @@ Lexer Lexer_alloc(void *callback, void *context)
     }
 
     /* Set up the initial state */
+    self -> parser = Parser_alloc(callback, context);
     self -> state = 0;
     self -> buffer = StringBuffer_alloc();
     return self;
@@ -213,12 +217,6 @@ void Lexer_free(Lexer self)
 }
 
 
-/* Prints out debugging information about the receiver */
-void Lexer_debug(Lexer self)
-{
-    printf("Lexer (%p)\n", self);
-    printf("  state = %d\n", self -> state);
-}
 
 /* Updates the recevier's state based on the given character */
 void Lexer_acceptChar(Lexer self, int ch)
