@@ -1,4 +1,4 @@
-# $Id: grammar.pcg,v 1.6 1999/12/11 16:13:37 phelps Exp $
+# $Id: grammar.pcg,v 1.7 1999/12/11 18:17:57 phelps Exp $
 #
 # The grammar for the parser compiler, expressed in terms of itself.
 # A grammar is merely a list of productions, which in turn consist of
@@ -30,10 +30,10 @@
 <exp-list> ::= <terminal>
 	[make_exp_list]
 
-<nonterminal> ::= ID
+<nonterminal> ::= LT ID GT
 	[make_nonterminal]
 
-<terminal> ::= STRING
+<terminal> ::= ID
 	[make_terminal]
 
 <function> ::= LBRACKET ID RBRACKET

@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.3 1999/12/11 18:00:13 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.4 1999/12/11 18:17:01 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -96,13 +96,13 @@ int component_get_index(component_t self)
 /* Pretty-print function for a nonterminal */
 static void nonterminal_print(component_t self, FILE *out)
 {
-    fprintf(out, "%s ", self -> name);
+    fprintf(out, "<%s>{%d} ", self -> name, self -> index);
 }
 
 /* Pretty-print function for a terminal */
 static void terminal_print(component_t self, FILE *out)
 {
-    fprintf(out, "\"%s\" ", self -> name);
+    fprintf(out, "%s{%d} ", self -> name, self -> index);
 }
 
 

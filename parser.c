@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.5 1999/12/11 18:02:14 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.6 1999/12/11 18:17:57 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -121,7 +121,6 @@ static int lex_comment(parser_t self, int ch);
 static int lex_colon(parser_t self, int ch);
 static int lex_colon_colon(parser_t self, int ch);
 static int lex_id(parser_t self, int ch);
-static int lex_string(parser_t self, int ch);
 static int lex_error(parser_t self, int ch);
 
 
@@ -276,6 +275,16 @@ static int accept_error(parser_t self, char *token)
     abort();
 }
 
+static int accept_lt(parser_t self)
+{
+    return shift_reduce(self, TT_LT, NULL);
+}
+
+static int accept_gt(parser_t self)
+{
+    return shift_reduce(self, TT_GT, NULL);
+}
+
 static int accept_lbracket(parser_t self)
 {
     return shift_reduce(self, TT_LBRACKET, NULL);
@@ -304,21 +313,6 @@ static int accept_id(parser_t self, char *id)
     /* Push it onto the stack and reduce */
     return shift_reduce(self, TT_ID, value);
 }
-
-static int accept_string(parser_t self, char *string)
-{
-    char *value;
-
-    /* Make a copy of the string */
-    if ((value = strdup(string)) == NULL)
-    {
-	return -1;
-    }
-
-    /* Push it onto the stack and reduce */
-    return shift_reduce(self, TT_STRING, value);
-}
-
 
 /* Expands the token buffer */
 static int grow_buffer(parser_t self)
@@ -368,14 +362,6 @@ static int lex_start(parser_t self, int ch)
 	    return accept_eof(self);
 	}
 
-	/* Watch for a string */
-	case '"':
-	{
-	    self -> point = self -> token;
-	    self -> lex_state = lex_string;
-	    return 0;
-	}
-
 	/* Watch for a comment */
 	case '#':
 	{
@@ -394,6 +380,20 @@ static int lex_start(parser_t self, int ch)
 
 	    self -> lex_state = lex_colon;
 	    return 0;
+	}
+
+	/* Watch for a less-than symbol */
+	case '<':
+	{
+	    self -> lex_state = lex_start;
+	    return accept_lt(self);
+	}
+
+	/* Watch for a greater-than symbol */
+	case '>':
+	{
+	    self -> lex_state = lex_start;
+	    return accept_gt(self);
 	}
 
 	/* Watch for a left square bracket */
@@ -511,38 +511,6 @@ static int lex_id(parser_t self, int ch)
     return lex_start(self, ch);
 }
 
-static int lex_string(parser_t self, int ch)
-{
-    /* Watch for illegal EOF in the string */
-    if (ch == EOF)
-    {
-	return lex_error(self, ch);
-    }
-
-    /* Watch for the closing quote */
-    if (ch == '"')
-    {
-	/* Null-terminate the token */
-	if (append_char(self, 0) < 0)
-	{
-	    return -1;
-	}
-
-	/* Accept it */
-	self -> lex_state = lex_start;
-	return accept_string(self, self -> token);
-    }
-
-    /* Anything else is part of the string */
-    if (append_char(self, ch) < 0)
-    {
-	return -1;
-    }
-
-    self -> lex_state = lex_string;
-    return 0;
-}
-
 /* We've encountered a bogus token.  Continue reading it until we have 
  * a complete token to play with before complaining */
 static int lex_error(parser_t self, int ch)
@@ -625,14 +593,14 @@ static component_t intern_nonterminal(parser_t self, char *name)
 
     /* Make space for it in the table */
     self -> nonterminals = (component_t *)realloc(
-	self -> nonterminals, (self -> terminal_count + 1) * sizeof(component_t));
+	self -> nonterminals, (self -> nonterminal_count + 1) * sizeof(component_t));
     self -> nonterminals[self -> nonterminal_count++] = component;
 
     return component;
 }
 
 
-/* grammar ::= production-list */
+/* <grammar> ::= <production-list> */
 static void *accept_grammar(parser_t self)
 {
     grammar_t grammar = (grammar_t)self -> value_top[0];
@@ -649,7 +617,7 @@ static void *accept_grammar(parser_t self)
     return grammar;
 }
 
-/* production-list ::= production-list production */
+/* <production-list> ::= <production-list> <production> */
 static void *extend_production_list(parser_t self)
 {
     grammar_t grammar = (grammar_t)self -> value_top[0];
@@ -659,7 +627,7 @@ static void *extend_production_list(parser_t self)
     return grammar;
 }
 
-/* production-list ::= production */
+/* <production-list> ::= <production> */
 static void *make_production_list(parser_t self)
 {
     grammar_t grammar;
@@ -677,7 +645,7 @@ static void *make_production_list(parser_t self)
     return grammar;
 }
 
-/* production ::= nonterminal "DERIVES" exp-list function */
+/* <production> ::= <nonterminal> DERIVES <exp-list> <function> */
 static void *make_production(parser_t self)
 {
     component_t component = (component_t)self -> value_top[0];
@@ -691,8 +659,8 @@ static void *make_production(parser_t self)
     return production;
 }
 
-/* exp-list ::= exp-list nonterminal */
-/* exp-list ::= exp-list terminal */
+/* <exp-list> ::= <exp-list> <nonterminal> */
+/* <exp-list> ::= <exp-list> <terminal> */
 static void *add_component(parser_t self)
 {
     production_t production = (production_t)self -> value_top[0];
@@ -702,8 +670,8 @@ static void *add_component(parser_t self)
     return production;
 }
 
-/* exp-list ::= nonterminal */
-/* exp-list ::= terminal */
+/* <exp-list> ::= <nonterminal> */
+/* <exp-list> ::= <terminal> */
 static void *make_exp_list(parser_t self)
 {
     production_t production;
@@ -719,19 +687,19 @@ static void *make_exp_list(parser_t self)
     return production;
 }
 
-/* nonterminal ::= "ID" */
+/* <nonterminal> ::= LT ID GT */
 static void *make_nonterminal(parser_t self)
 {
     char *name;
     component_t nonterminal;
 
-    name = self -> value_top[0];
+    name = self -> value_top[1];
     nonterminal = intern_nonterminal(self, name);
     free(name);
     return nonterminal;
 }
 
-/* terminal ::= "STRING" */
+/* <terminal> ::= ID */
 static void *make_terminal(parser_t self)
 {
     char *name;
@@ -743,7 +711,7 @@ static void *make_terminal(parser_t self)
     return terminal;
 }
 
-/* function ::= "LBRACKET" "ID" "RBRACKET" */
+/* <function> ::= LBRACKET ID RBRACKET */
 static void *make_function(parser_t self)
 {
     return self -> value_top[1];
