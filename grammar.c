@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.11 1999/12/19 16:04:25 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.12 1999/12/20 07:34:59 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -51,14 +51,18 @@ struct kernel
     /* The kernel's go-to table */
     int *goto_table;
 
+    /* The kernel's propagates table */
+    char **propagates_table;
+
     /* The kernel's follows tables */
-    char **follows;
+    char **follows_table;
 };
 
 /* Allocates and initializes a new kernel_t */
-static kernel_t kernel_alloc(int count, int *pairs)
+static kernel_t kernel_alloc(int count, int *pairs, int terminal_count)
 {
     kernel_t self;
+    int index;
 
     /* Allocate some space for the new kernel_t */
     if ((self = (kernel_t)malloc(sizeof(struct kernel))) == NULL)
@@ -70,13 +74,33 @@ static kernel_t kernel_alloc(int count, int *pairs)
     self -> count = count;
     self -> pairs = pairs;
     self -> goto_table = NULL;
-    self -> follows = NULL;
+    self -> follows_table = NULL;
 
-    /* Allocate some room for the follows tables */
-    if ((self -> follows = (char **)calloc(count, sizeof(char *))) == NULL)
+    /* Allocate some room for the propagates table */
+    if ((self -> propagates_table = (char **)calloc(count, sizeof(char *))) == NULL)
     {
 	free(self -> pairs);
 	free(self);
+	return NULL;
+    }
+
+    /* Allocate some room for the follows tables */
+    if ((self -> follows_table = (char **)calloc(count, sizeof(char *))) == NULL)
+    {
+
+	free(self -> propagates_table);
+	free(self -> pairs);
+	free(self);
+	return NULL;
+    }
+
+    /* Fill in the follows table entries */
+    for (index = 0; index < count; index++)
+    {
+	if ((self -> follows_table[index] = (char *)calloc(terminal_count, sizeof(char))) == NULL)
+	{
+	    abort();
+	}
     }
 
     return self;
@@ -110,6 +134,27 @@ static int kernel_matches(kernel_t self, int count, int *pairs)
 
     /* Compare the arrays */
     return memcmp(self -> pairs, pairs, count * sizeof(int *)) == 0;
+}
+
+/* Adds the terminal to the follows set for the given kernel item */
+static int kernel_set_follows(kernel_t self, int code, int terminal_index)
+{
+    int i;
+
+    /* Figure out which kernel item we're dealing with */
+    for (i = 0; i < self -> count; i++)
+    {
+	/* Got a match? */
+	if (self -> pairs[i] == code)
+	{
+	    int old_value = self -> follows_table[i][terminal_index];
+	    self -> follows_table[i][terminal_index] = 1;
+	    return old_value;
+	}
+    }
+
+    /* Couldn't find the entry */
+    abort();
 }
 
 
@@ -333,7 +378,7 @@ int intern_kernel(grammar_t self, int count, int *pairs)
     }
 
     /* Not there, so create a new kernel */
-    kernel = kernel_alloc(count, pairs);
+    kernel = kernel_alloc(count, pairs, self -> terminal_count);
 
     /* And put it in the table */
     self -> kernels = (kernel_t *)realloc(
@@ -477,7 +522,7 @@ static void compute_pairs(grammar_t self, kernel_t kernel, int *counts, int **ta
 }
 
 /* Computes the LR(0) kernels for the grammar */
-int compute_lr0_kernels(grammar_t self)
+int compute_LR0_kernels(grammar_t self)
 {
     int *pairs;
     int count = grammar_get_component_count(self);
@@ -572,35 +617,265 @@ static void mark_firsts(grammar_t self, component_t nonterminal, char *table)
     free(tried);
 }
 
+/* Forward declaration */
+static int compute_propagates_for_production_and_offset(
+    grammar_t self,
+    kernel_t kernel,
+    production_t production,
+    int offset,
+    component_t terminal,
+    char *propagates,
+    int *changed);
+
+/* Propagate a terminal to the derived productions */
+static int propagate_derived(
+    grammar_t self,
+    kernel_t kernel,
+    component_t nonterminal,
+    component_t terminal,
+    char *propagates,
+    int *changed)
+{
+    production_t *probe;
+    int ni;
+
+    ni = component_get_index(nonterminal);
+    for (probe = self -> productions_by_nonterminal[ni]; *probe != NULL; probe++)
+    {
+	if (compute_propagates_for_production_and_offset(
+	    self, kernel,
+	    *probe, 0,
+	    terminal, propagates,
+	    changed) < 0)
+	{
+	    return -1;
+	}
+    }
+
+    return 0;    
+}
+
+/* Compute the propagates table contribution of a given kernel production */
+static int compute_propagates_for_production_and_offset(
+    grammar_t self,
+    kernel_t kernel,
+    production_t production,
+    int offset,
+    component_t terminal,
+    char *propagates,
+    int *changed)
+{
+    component_t component;
+    component_t next;
+    int pi = production_get_index(production);
+
+    /* If there is no next component then we're done */
+    if ((component = production_get_component(production, offset)) == NULL)
+    {
+	return 0;
+    }
+
+    /* A NULL terminal is the special `propagates' token */
+    if (terminal == NULL)
+    {
+	/* Kernel items are implicit and shouldn't be recorded */
+	if (offset == 0)
+	{
+	    /* If this production already propagates then bail */
+	    if (propagates[pi])
+	    {
+		return 0;
+	    }
+
+	    /* Mark it as propagating */
+	    propagates[pi] = 1;
+	}
+    }
+    else
+    {
+	kernel_t target;
+	int code;
+
+	/* Figure out which kernel this belongs in */
+	target = self -> kernels[kernel -> goto_table[component_index(self, component)]];
+	code = encode(self, pi, offset + 1);
+	
+	/* Put the terminal in the follows set of the destination */
+	if (kernel_set_follows(target, code, component_get_index(terminal)))
+	{
+	    return 0;
+	}
+	else if (changed != NULL)
+	{
+	    /* Indicate that we're not done propagating yet */
+	    *changed = 1;
+	}
+    }
+
+    /* If the component is a terminal then there's nothing else to do */
+    if (! component_is_nonterminal(component))
+    {
+	return 0;
+    }
+
+    /* See what the following component is */
+    if ((next = production_get_component(production, offset + 1)) == NULL)
+    {
+	propagate_derived(self, kernel, component, terminal, propagates, changed);
+	return 0;
+    }
+
+    /* If it's a nonterminal then things are complicated */
+    if (next != NULL && component_is_nonterminal(next))
+    {
+	char *firsts;
+	int index;
+
+	/* Allocate some room for the `firsts' table */
+	if ((firsts = (char *)calloc(self -> terminal_count, sizeof(char))) == NULL)
+	{
+	    return -1;
+	}
+
+	/* Determine what terminals may occupy the first position in the nonterminal */
+	mark_firsts(self, next, firsts);
+
+	/* Go through the firsts set and add it to the follows set of our target */
+	for (index = 0; index < self -> terminal_count; index++)
+	{
+	    if (firsts[index])
+	    {
+		propagate_derived(
+		    self, kernel,
+		    component, self -> terminals[index],
+		    propagates, changed);
+	    }
+	}
+
+	/* Clean up */
+	free(firsts);
+	return 0;
+    }
+
+    /* Otherwise we just propagate the terminal to the target's follows set */
+    propagate_derived(self, kernel, component, next, propagates, changed);
+    return 0;
+}
+
+/* Compute the kernel's propagates table */
+static void compute_propagates_for_kernel(grammar_t self, kernel_t kernel)
+{
+    int index;
+
+    /* Go through each of the (production, offset) pairs in the kernel */
+    for (index = 0; index < kernel -> count; index++)
+    {
+	int pi;
+	char *table;
+	int offset = decode(self, kernel -> pairs[index], &pi);
+
+	/* Make the propagates table entry if it doesn't already exist */
+	if ((table = kernel -> propagates_table[index]) == NULL)
+	{
+	    table = (char *)calloc(self -> production_count, sizeof(char));
+	    kernel -> propagates_table[index] = table;
+	}
+
+	/* Fill it in (and compute the spontaneously generated follows set info */
+	compute_propagates_for_production_and_offset(
+	    self, kernel,
+	    self -> productions[pi], offset,
+	    NULL, kernel -> propagates_table[index],
+	    NULL);
+    }
+}
+
+
+/* Propagate the follows table information around */
+static void propagate_follows(grammar_t self, int *changed)
+{
+    int i, j, k, m;
+
+    /* Go through the kernels and propagate stuff */
+    for (i = 0; i < self -> kernel_count; i++)
+    {
+	kernel_t kernel = self -> kernels[i];
+
+	/* Go through each kernel item */
+	for (j = 0; j < kernel -> count; j++)
+	{
+	    /* Go through the productions */
+	    for (k = -1; k < self -> production_count; k++)
+	    {
+		/* See if we propagate */
+		if (k < 0 || kernel -> propagates_table[j][k])
+		{
+		    int pi;
+		    int offset;
+		    production_t production;
+
+		    /* Work out the production and offset */
+		    if (k < 0)
+		    {
+			offset = decode(self, kernel -> pairs[j], &pi);
+		    }
+		    else
+		    {
+			pi = k;
+			offset = 0;
+		    }
+
+		    /* Look up the production */
+		    production = self -> productions[pi];
+
+		    /* Go through the terminal symbols and propagate them */
+		    for (m = 0; m < self -> terminal_count; m++)
+		    {
+			if (kernel -> follows_table[j][m])
+			{
+			    compute_propagates_for_production_and_offset(
+				self, kernel,
+				production, offset,
+				self -> terminals[m],
+				kernel -> propagates_table[j], changed);
+			}
+		    }
+		}
+	    }
+	}
+    }
+}
+
+
 /* Compute a table which encodes which terminals can follow each
  * production rule in a given kernel */
 static int compute_propagates(grammar_t self)
 {
     int index;
-    char *firsts = (char *)malloc(self -> terminal_count * sizeof(char));
+    int changed;
 
-    /* FIX THIS: this is just a handy place to do debugging */
-    for (index = 0; index < self -> nonterminal_count; index++)
+    /* Prepare the kernels for propagation table construction */
+    for (index = 0; index < self -> kernel_count; index++)
     {
-	int i;
+	printf("kernel %d\n", index);
+	compute_propagates_for_kernel(self, self -> kernels[index]);
+    }
 
-	memset(firsts, 0, self -> terminal_count * sizeof(char));
-	mark_firsts(self, self -> nonterminals[index], firsts);
+    /* Inject the <EOF> terminal into the start kernel's production */
+    self -> kernels[0] -> follows_table[0][0] = 1;
 
-	component_print(self -> nonterminals[index], stdout);
-	printf(":");
-	for (i = 0; i < self -> terminal_count; i++)
-	{
-	    if (firsts[i])
-	    {
-		component_print(self -> terminals[i], stdout);
-	    }
-	}
-	printf("\n");
+    /* Move stuff around until things stop changing */
+    changed = 1;
+    while (changed)
+    {
+	changed = 0;
+	propagate_follows(self, &changed);
     }
 
     return 0;
 }
+
+
 
 
 /* Allocates and initializes a new nonterminal grammar_t */
@@ -651,7 +926,7 @@ grammar_t grammar_alloc(
     compute_generates(self);
 
     /* Compute the LR(0) kernels */
-    if (compute_lr0_kernels(self) < 0)
+    if (compute_LR0_kernels(self) < 0)
     {
 	grammar_free(self);
 	return NULL;
@@ -704,13 +979,6 @@ int grammar_get_component_count(grammar_t self)
 }
 
 
-/* Inserts the go-to contribution of the encoded production/offset into the table */
-void grammar_compute_goto(grammar_t self, int **table, int code)
-{
-    fprintf(stderr, "grammar_compute_goto(): not yet implemented\n");
-    exit(1);
-}
-
 /* Print out the kernels */
 void grammar_print_kernels(grammar_t self, FILE *out)
 {
@@ -726,9 +994,32 @@ void grammar_print_kernels(grammar_t self, FILE *out)
 	fprintf(out, "---\nkernel %d\n", index);
 	for (j = 0; j < count; j++)
 	{
+	    int first = 1;
 	    int pi;
+	    int k;
+
 	    int offset = decode(self, pairs[j], &pi);
 	    production_print_with_offset(self -> productions[pi], out, offset);
+
+	    fprintf(out, ", ");
+
+	    for (k = 0; k < self -> terminal_count; k++)
+	    {
+		if (kernel -> follows_table[j][k])
+		{
+		    if (first)
+		    {
+			first = 0;
+		    }
+		    else
+		    {
+			fprintf(out, "/ ");
+		    }
+
+		    component_print(self -> terminals[k], out);
+		}
+	    }
+
 	    fprintf(out, "\n");
 	}
     }
