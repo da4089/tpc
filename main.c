@@ -158,7 +158,6 @@ int main(int argc, char *argv[])
 	    case 'p':
 	    {
 		format = FORMAT_PYTHON;
-		printf("optarg=%s\n", optarg == NULL ? "NULL" : optarg);
 		module = optarg;
 		break;
 	    }
