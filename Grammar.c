@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.23 1999/02/16 09:01:39 phelps Exp $ */
+/* $Id: Grammar.c,v 1.24 1999/02/16 11:10:34 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -319,6 +319,24 @@ static void PrintTerminalEnum(Grammar self, FILE *out)
     }
 
     fputs("} terminal_t;\n\n", out);
+}
+
+/* Prints out the reduction table */
+static void PrintReductionTable(Grammar self, FILE *out)
+{
+    int index;
+
+    /* Print the table header */
+    fprintf(out, "static void (*productions[%d])() =\n{\n", self -> production_count);
+
+    /* Print the production functions */
+    for (index = 0; index < self -> production_count; index++)
+    {
+	fprintf(out, "    %s,\n", Production_getFunction(self -> productions[index]));
+    }
+
+    /* Print the table footer */
+    fprintf(out, "};\n\n");
 }
 
 /* Prints the production_type table */
@@ -661,6 +679,7 @@ void Grammar_printTable(Grammar self, FILE *out)
 
     PrintMacros(self, out);
     PrintTerminalEnum(self, out);
+    PrintReductionTable(self, out);
     PrintProductionTypeTable(self, out);
     PrintShiftReduceTable(self, out);
     PrintGotoTable(self, out);
