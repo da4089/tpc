@@ -1,4 +1,4 @@
-/* $Id: Production.c,v 1.1 1999/02/08 16:30:39 phelps Exp $ */
+/* $Id: Production.c,v 1.2 1999/02/08 17:17:33 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,7 +87,7 @@ int Production_getNonterminalIndex(Production self)
 }
 
 /* Answers the receiver's first Component */
-Component Production_firstComponent(Production self)
+Component Production_getFirstComponent(Production self)
 {
     return self -> components[0];
 }
