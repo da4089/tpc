@@ -1,7 +1,7 @@
 bin_PROGRAMS = pc
 
 pc_SOURCES = \
-	Grammar.h Grammar.c \
+	grammar.h Grammar.h Grammar.c \
 	Kernel.h Kernel.c \
 	Production.h Production.c \
 	Component.h Component.c \
