@@ -33,6 +33,18 @@ static void *CreateFunction()
     return NULL;
 }
 
+static void *ExtendArgList()
+{
+    printf("<arg-list> ::= <arg-list> COMMA <value>\n");
+    return NULL;
+}
+
+static void *CreateArgList()
+{
+    printf("<arg-list> ::= <value>\n");
+    return NULL;
+}
+
 
 static void *ExtendDisjunction()
 {
@@ -46,11 +58,6 @@ static void *DisjunctionFromXorExp()
     return NULL;
 }
 
-static void *ExtendConjunction()
-{
-    printf("<conjunction> ::= <conjunction> AND <bool-exp>\n");
-    return NULL;
-}
 
 static void *ExtendXorExp()
 {
@@ -61,6 +68,13 @@ static void *ExtendXorExp()
 static void *XorExpFromConjunction()
 {
     printf("<xor-exp> ::= <conjunction>\n");
+    return NULL;
+}
+
+
+static void *ExtendConjunction()
+{
+    printf("<conjunction> ::= <conjunction> AND <bool-exp>\n");
     return NULL;
 }
 
@@ -95,6 +109,7 @@ static void *CreateNestedBoolExp()
     return NULL;
 }
 
+
 static void *NumValueFromFunctionExp()
 {
     printf("<num-value> ::= <function-exp>\n");
@@ -119,9 +134,39 @@ static void *PredicateFromEQ()
     return NULL;
 }
 
+static void *PredicateFromNEQ()
+{
+    printf("<predicate> ::= NEQ\n");
+    return NULL;
+}
+
+static void *PredicateFromLT()
+{
+    printf("<predicate> ::= LT\n");
+    return NULL;
+}
+
+static void *PredicateFromGT()
+{
+    printf("<predicate> ::= GT\n");
+    return NULL;
+}
+
 static void *PredicateFromLE()
 {
     printf("<predicate> ::= LE\n");
+    return NULL;
+}
+
+static void *PredicateFromGE()
+{
+    printf("<predicate> ::= GE\n");
+    return NULL;
+}
+
+static void *ExtendBitDisjunction()
+{
+    printf("<bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>\n");
     return NULL;
 }
 
@@ -131,15 +176,45 @@ static void *BitDisjunctionFromBitXorExp()
     return NULL;
 }
 
+static void *ExtendBitXorExp()
+{
+    printf("<bit-xor-exp> ::= <bit-xor-exp> BIT_XOR <bit-conjunction>\n");
+    return NULL;
+}
+
 static void *BitXorExpFromBitConjunction()
 {
     printf("<bit-xor-exp> ::= <bit-conjunction>\n");
     return NULL;
 }
 
+static void *ExtendBitConjunction()
+{
+    printf("<bit-conjunction> ::= <bit-conjunction> BIT_AND <bit-shift-exp>\n");
+    return NULL;
+}
+
 static void *BitConjunctionFromBitShiftExp()
 {
     printf("<bit-conjunction> ::= <bit-shift-exp>\n");
+    return NULL;
+}
+
+static void *ExtendBitSHL()
+{
+    printf("<bit-shift-exp> ::= <bit-shift-exp> BIT_SHL <sum>\n");
+    return NULL;
+}
+
+static void *ExtendBitSHR()
+{
+    printf("<bit-shift-exp> ::= <bit-shift-exp> BIT_SHR <sum>\n");
+    return NULL;
+}
+
+static void *ExtendBitLSR()
+{
+    printf("<bit-shift-exp> ::= <bit-shift-exp> BIT_LSR <sum>\n");
     return NULL;
 }
 
@@ -170,6 +245,12 @@ static void *SumFromProduct()
 static void *ProductFromTimesExp()
 {
     printf("<product> ::= <product> TIMES <num-exp>\n");
+    return NULL;
+}
+
+static void *ProductFromDivExp()
+{
+    printf("<product> ::= <product> DIV <num-exp>\n");
     return NULL;
 }
 
@@ -215,12 +296,6 @@ static void *NameFromId()
     return NULL;
 }
 
-static void *CreateArgList()
-{
-    printf("<arg-list> ::= <value>\n");
-    return NULL;
-}
-
 
 static void *Function()
 {
@@ -228,7 +303,7 @@ static void *Function()
 }
 
 
-#include "e4new.h"
+#include "e4.h"
 
 /* Push a state and value onto the stack */
 static void Push(int state, void *value)
@@ -311,16 +386,13 @@ int main(int argc, char *argv[])
     *state_top = 0;
     printf("hello sailor\n");
 
+    ShiftReduce(TT_ID, "equals");
     ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_ID, "sizeof");
-    ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_ID, "BOB");
-    ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_ID, "sizeof");
-    ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_ID, "DAVE");
+    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_COMMA, NULL);
+    ShiftReduce(TT_STRING, "Chat");
+    ShiftReduce(TT_COMMA, NULL);
+    ShiftReduce(TT_STRING, "phelps");
     ShiftReduce(TT_RPAREN, NULL);
 
     ShiftReduce(TT_EOF, NULL);
