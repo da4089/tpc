@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.25 2000/10/27 08:35:50 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.26 2002/04/11 21:41:09 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -568,6 +568,10 @@ int compute_LR0_kernels(grammar_t self)
 	/* Set the kernel's goto table */
 	kernel -> goto_table = goto_table;
     }
+
+    /* Clean up */
+    free(pairs_counts);
+    free(pairs_table);
 
     return 0;
 }
