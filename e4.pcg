@@ -1,87 +1,156 @@
-<sub-exp> ::= <or-exp-list> [function]
+<sub-exp> ::= <or-exp-list>
+	[function]
 
-<or-exp-list> ::= <or-exp-list> BOOL_OR <xor-exp-list> [function]
-<or-exp-list> ::= <xor-exp-list> [function]
+<or-exp-list> ::= <or-exp-list> BOOL_OR <xor-exp-list>
+	[function]
+<or-exp-list> ::= <xor-exp-list>
+	[function]
 
-<xor-exp-list> ::= <xor-exp-list> BOOL_XOR <and-exp-list> [function]
-<xor-exp-list> ::= <and-exp-list> [function]
+<xor-exp-list> ::= <xor-exp-list> BOOL_XOR <and-exp-list>
+	[function]
+<xor-exp-list> ::= <and-exp-list>
+	[function]
 
-<and-exp-list> ::= <and-exp-list> BOOL_AND <bool-exp> [function]
-<and-exp-list> ::= <bool-exp> [function]
+<and-exp-list> ::= <and-exp-list> BOOL_AND <bool-exp>
+	[function]
+<and-exp-list> ::= <bool-exp>
+	[function]
 
-<bool-exp> ::= <value> [function]
-<bool-exp> ::= <value> <predicate> <value> [function]
-<bool-exp> ::= BANG <bool-exp> [function]
+<bool-exp> ::= <value> <predicate> <value>
+	[function]
+<bool-exp> ::= <function>
+	[function]
+<bool-exp> ::= BANG <bool-exp>
+	[function]
 
-<value> ::= STRING [function]
-<value> ::= <bit-or-exp-list> [function]
+<value> ::= STRING
+	[function]
+<value> ::= <function>
+	[function]
+<value> ::= <bit-or-exp-list>
+	[function]
 
-<predicate> ::= EQ [function]
-<predicate> ::= NEQ [function]
-<predicate> ::= LT [function]
-<predicate> ::= GT [function]
-<predicate> ::= LE [function]
-<predicate> ::= GE [function]
+<predicate> ::= EQ
+	[function]
+<predicate> ::= NEQ
+	[function]
+<predicate> ::= LT
+	[function]
+<predicate> ::= GT
+	[function]
+<predicate> ::= LE
+	[function]
+<predicate> ::= GE
+	[function]
 
-<bit-or-exp-list> ::= <bit-or-exp-list> BIT_OR <bit-xor-exp-list> [function]
-<bit-or-exp-list> ::= <bit-xor-exp-list> [function]
+<bit-or-exp-list> ::= <bit-or-exp-list> BIT_OR <bit-xor-exp-list>
+	[function]
+<bit-or-exp-list> ::= <bit-xor-exp-list>
+	[function]
 
-<bit-xor-exp-list> ::= <bit-xor-exp-list> BIT_XOR <bit-and-exp-list> [function]
-<bit-xor-exp-list> ::= <bit-and-exp-list> [function]
+<bit-xor-exp-list> ::= <bit-xor-exp-list> BIT_XOR <bit-and-exp-list>
+	[function]
+<bit-xor-exp-list> ::= <bit-and-exp-list>
+	[function]
 
-<bit-and-exp-list> ::= <bit-and-exp-list> BIT_AND <bit-shift-exp-list> [function]
-<bit-and-exp-list> ::= <bit-shift-exp-list> [function]
+<bit-and-exp-list> ::= <bit-and-exp-list> BIT_AND <bit-shift-exp-list>
+	[function]
+<bit-and-exp-list> ::= <bit-shift-exp-list>
+	[function]
 
-<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHL <sum-list> [function]
-<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHR <sum-list> [function]
-<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_LSR <sum-list> [function]
-<bit-shift-exp-list> ::= <sum-list> [function]
+<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHL <sum-list>
+	[function]
+<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_SHR <sum-list>
+	[function]
+<bit-shift-exp-list> ::= <bit-shift-exp-list> BIT_LSR <sum-list>
+	[function]
+<bit-shift-exp-list> ::= <sum-list>
+	[function]
 
-<sum-list> ::= <sum-list> PLUS <product-list> [function]
-<sum-list> ::= <sum-list> MINUS <product-list> [function]
-<sum-list> ::= <product-list> [function]
+<sum-list> ::= <sum-list> PLUS <product-list>
+	[function]
+<sum-list> ::= <sum-list> MINUS <product-list>
+	[function]
+<sum-list> ::= <product-list>
+	[function]
 
-<product-list> ::= <product-list> TIMES <num-exp> [function]
-<product-list> ::= <product-list> DIV <num-exp> [function]
-<product-list> ::= <product-list> MOD <num-exp> [function]
-<product-list> ::= <num-exp> [function]
+<product-list> ::= <product-list> TIMES <num-exp>
+	[function]
+<product-list> ::= <product-list> DIV <num-exp>
+	[function]
+<product-list> ::= <product-list> MOD <num-exp>
+	[function]
+<product-list> ::= <num-exp>
+	[function]
 
-<num-exp> ::= <num-value> [function]
-<num-exp> ::= MINUS <num-value> [function]
-<num-exp> ::= NEG <num-value> [function]
+<num-exp> ::= <num-value>
+	[function]
+<num-exp> ::= MINUS <num-value>
+	[function]
+<num-exp> ::= NEG <num-value>
+	[function]
 
-<num-value> ::= INT32 [function]
-<num-value> ::= INT64 [function]
-<num-value> ::= REAL64 [function]
-<num-value> ::= <name> [function]
-<num-value> ::= <function> [function]
-<num-value> ::= LPAREN <bit-or-exp-list> RPAREN [function]
+<num-value> ::= INT32
+	[function]
+<num-value> ::= INT64
+	[function]
+<num-value> ::= REAL64
+	[function]
+<num-value> ::= <name>
+	[function]
+<num-value> ::= LPAREN <or-exp-list> RPAREN
+	[function]
 
-<name> ::= ID [function]
-<name> ::= EQ [function]
-<name> ::= NEQ [function]
-<name> ::= LT [function]
-<name> ::= GT [function]
-<name> ::= GE [function]
-<name> ::= LE [function]
-<name> ::= BOOL_OR [function]
-<name> ::= BOOL_XOR [function]
-<name> ::= BOOL_AND [function]
-<name> ::= BIT_OR [function]
-<name> ::= BIT_XOR [function]
-<name> ::= BIT_AND [function]
-<name> ::= BIT_SHL [function]
-<name> ::= BIT_SHR [function]
-<name> ::= BIT_LSR [function]
-<name> ::= PLUS [function]
-<name> ::= MOD [function]
-<name> ::= TIMES [function]
-<name> ::= DIV [function]
+<name> ::= ID
+	[function]
+<name> ::= EQ
+	[function]
+<name> ::= NEQ
+	[function]
+<name> ::= LT
+	[function]
+<name> ::= GT
+	[function]
+<name> ::= GE
+	[function]
+<name> ::= LE
+	[function]
+<name> ::= BOOL_OR
+	[function]
+<name> ::= BOOL_XOR
+	[function]
+<name> ::= BOOL_AND
+	[function]
+<name> ::= BIT_OR
+	[function]
+<name> ::= BIT_XOR
+	[function]
+<name> ::= BIT_AND
+	[function]
+<name> ::= BIT_SHL
+	[function]
+<name> ::= BIT_SHR
+	[function]
+<name> ::= BIT_LSR
+	[function]
+<name> ::= PLUS
+	[function]
+<name> ::= MOD
+	[function]
+<name> ::= TIMES
+	[function]
+<name> ::= DIV
+	[function]
 
-<function> ::= <function-name> LPAREN RPAREN [function]
-<function> ::= <function-name> LPAREN <arg-list> RPAREN [function]
+<function> ::= <function-name> LPAREN RPAREN
+	[function]
+<function> ::= <function-name> LPAREN <arg-list> RPAREN
+	[function]
 
-<function-name> ::= ID [function]
+<function-name> ::= ID
+	[function]
 
-<arg-list> ::= <arg-list> COMMA <value> [function]
-<arg-list> ::= <value> [function]
+<arg-list> ::= <arg-list> COMMA <value>
+	[function]
+<arg-list> ::= <value>
+	[function]

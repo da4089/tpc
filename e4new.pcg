@@ -1,39 +1,37 @@
-<sub-exp> ::= <disjunction>
+<START> ::= <disjunction>
 	[Accept]
 
 <disjunction> ::= <disjunction> BOOL_OR <xor-exp>
-	[Function]
+	[ExtendDisjunction]
 <disjunction> ::= <xor-exp>
-	[Function]
+	[DisjunctionFromXorExp]
 
 <xor-exp> ::= <xor-exp> BOOL_XOR <conjunction>
 	[Function]
 <xor-exp> ::= <conjunction>
-	[Function]
+	[XorExpFromConjunction]
 
 <conjunction> ::= <conjunction> BOOL_AND <bool-exp>
-	[Function]
+	[ExtendConjunction]
 <conjunction> ::= <bool-exp>
-	[Function]
+	[ConjunctionFromBoolExp]
 
 <bool-exp> ::= <value> <predicate> <value>
-	[Function]
+	[BoolExpFromComparison]
 <bool-exp> ::= <bool-function>
-	[Function]
+	[BoolExpFromBoolFunction]
 <bool-exp> ::= BANG <bool-exp>
-	[Function]
+	[BoolExpFromNegation]
 <bool-exp> ::= LPAREN <disjunction> RPAREN
-	[Function]
+	[CreateNestedBoolExp]
 
 <value> ::= STRING
-	[Function]
-<value> ::= <value-function>
-	[Function]
+	[ValueFromString]
 <value> ::= <bit-disjunction>
-	[Function]
+	[ValueFromBitDisjunction]
 
 <predicate> ::= EQ
-	[Function]
+	[PredicateFromEQ]
 <predicate> ::= NEQ
 	[Function]
 <predicate> ::= LT
@@ -41,14 +39,14 @@
 <predicate> ::= GT
 	[Function]
 <predicate> ::= LE
-	[Function]
+	[PredicateFromLE]
 <predicate> ::= GE
 	[Function]
 
 <bool-function> ::= EXISTS LPAREN <name> RPAREN
-	[Function]
+	[CreateExistsFunction]
 <bool-function> ::= IS_INT32 LPAREN <name> RPAREN
-	[CreateInt32Function]
+	[CreateIsInt32Function]
 <bool-function> ::= IS_INT64 LPAREN <name> RPAREN
 	[Function]
 <bool-function> ::= IS_NAN LPAREN <name> RPAREN
@@ -68,14 +66,14 @@
 <bool-function> ::= WILDCARD LPAREN <name> COMMA <arg-list> RPAREN
 	[Function]
 <bool-function> ::= REGEX LPAREN <name> COMMA <arg-list> RPAREN
-	[Function]
+	[CreateRegexFunction]
 
 <value-function> ::= DECOMPOSE LPAREN <value> RPAREN
-	[Function]
+	[CreateDecomposeFunction]
 <value-function> ::= DECOMP_COMPAT LPAREN <value> RPAREN
 	[Function]
 <value-function> ::= PRIMARY LPAREN <value> RPAREN
-	[Function]
+	[CreatePrimaryFunction]
 <value-function> ::= SECONDARY LPAREN <value> RPAREN
 	[Function]
 <value-function> ::= TERTIARY LPAREN <value> RPAREN
@@ -84,17 +82,17 @@
 <bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>
 	[Function]
 <bit-disjunction> ::= <bit-xor-exp>
-	[Function]
+	[BitDisjunctionFromBitXorExp]
 
 <bit-xor-exp> ::= <bit-xor-exp> BIT_XOR <bit-conjunction>
 	[Function]
 <bit-xor-exp> ::= <bit-conjunction>
-	[Function]
+	[BitXorExpFromBitConjunction]
 
 <bit-conjunction> ::= <bit-conjunction> BIT_AND <bit-shift-exp>
 	[Function]
 <bit-conjunction> ::= <bit-shift-exp>
-	[Function]
+	[BitConjunctionFromBitShiftExp]
 
 <bit-shift-exp> ::= <bit-shift-exp> BIT_SHL <sum>
 	[Function]
@@ -103,41 +101,43 @@
 <bit-shift-exp> ::= <bit-shift-exp> BIT_LSR <sum>
 	[Function]
 <bit-shift-exp> ::= <sum>
-	[Function]
+	[BitShiftExpFromSum]
 
 <sum> ::= <sum> PLUS <product>
-	[Function]
+	[SumFromPlusExp]
 <sum> ::= <sum> MINUS <product>
-	[Function]
+	[SumFromMinusExp]
 <sum> ::= <product>
-	[Function]
+	[SumFromProduct]
 
 <product> ::= <product> TIMES <num-exp>
-	[Function]
+	[ProductFromTimesExp]
 <product> ::= <product> DIV <num-exp>
 	[Function]
 <product> ::= <product> MOD <num-exp>
-	[Function]
+	[ProductFromModExp]
 <product> ::= <num-exp>
-	[Function]
+	[ProductFromNumExp]
 
-<num-exp> ::= <num-value>
-	[Function]
 <num-exp> ::= MINUS <num-value>
 	[Function]
 <num-exp> ::= NEG <num-value>
 	[Function]
+<num-exp> ::= <num-value>
+	[NumExpFromNumValue]
 
 <num-value> ::= INT32
-	[Function]
+	[NumValueFromINT32]
 <num-value> ::= INT64
 	[Function]
 <num-value> ::= REAL64
 	[Function]
 <num-value> ::= <name>
-	[Function]
-<num-value> ::= LPAREN <bit-disjunction> RPAREN
-	[Function]
+	[NumValueFromName]
+<num-value> ::= <value-function>
+	[NumValueFromValueFunction]
+<num-value> ::= LPAREN <value> RPAREN
+	[CreateNestedNumValue]
 
 <name> ::= ID
 	[NameFromId]
@@ -218,4 +218,4 @@
 <arg-list> ::= <arg-list> COMMA <value>
 	[Function]
 <arg-list> ::= <value>
-	[Function]
+	[CreateArgList]
