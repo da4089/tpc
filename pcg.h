@@ -15,7 +15,7 @@ typedef enum
     TT_ID,
     TT_GT,
     TT_LBRACKET,
-    TT_RBRACKET,
+    TT_RBRACKET
 } terminal_t;
 
 struct production
@@ -66,7 +66,7 @@ static struct production productions[11] =
 #define R(x) (x)
 #define S(x) (x + 11)
 
-static unsigned char sr_table[19][7] =
+static unsigned int sr_table[19][7] =
 {
     { ERR, ERR, S(4), ERR, ERR, ERR, ERR },
     { ACC, ERR, S(4), ERR, ERR, ERR, ERR },
@@ -86,14 +86,14 @@ static unsigned char sr_table[19][7] =
     { ERR, ERR, R(5), R(5), ERR, R(5), ERR },
     { ERR, ERR, ERR, S(17), ERR, ERR, ERR },
     { ERR, ERR, ERR, ERR, ERR, ERR, S(18) },
-    { R(10), ERR, R(10), ERR, ERR, ERR, ERR },
+    { R(10), ERR, R(10), ERR, ERR, ERR, ERR }
 };
 
 #undef ERR
 #undef R
 #undef S
 
-static unsigned char goto_table[19][7] = 
+static unsigned int goto_table[19][7] =
 {
     { 0, 1, 2, 3, 0, 0, 0 },
     { 0, 0, 5, 3, 0, 0, 0 },
@@ -113,6 +113,6 @@ static unsigned char goto_table[19][7] =
     { 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0 }
 };
 
