@@ -1,8 +1,42 @@
-# $Id: e4.pcg,v 1.9 1999/02/19 10:32:13 phelps Exp $
+################################################################
 #
-# Copyright goes here
+#  Copyright (C) DSTC Pty Ltd (ACN 052 372 577) 1998.
+#  Unpublished work.  All Rights Reserved.
 #
-# Author: Ted Phelps
+#  The software contained on this media is the property of the
+#  DSTC Pty Ltd.  Use of this software is strictly in accordance
+#  with the license agreement in the accompanying LICENSE.DOC
+#  file.  If your distribution of this software does not contain
+#  a LICENSE.DOC file then you have no rights to use this
+#  software in any manner and should contact DSTC at the address
+#  below to determine an appropriate licensing arrangement.
+#
+#     DSTC Pty Ltd
+#     Level 7, Gehrmann Labs
+#     University of Queensland
+#     St Lucia, 4072
+#     Australia
+#     Tel: +61 7 3365 4310
+#     Fax: +61 7 3365 4311
+#     Email: enquiries@dstc.edu.au
+#
+#  This software is being provided "AS IS" without warranty of
+#  any kind.  In no event shall DSTC Pty Ltd be liable for
+#  damage of any kind arising out of or in connection with
+#  the use or performance of this software.
+#
+#
+#  Project:  Elvin: event notification
+#
+#  File:     $Source: /home/phelps/CVS/tpc/e4.pcg,v $
+#
+#  Description:
+#            Routine for converting process to a daemon
+#
+#  Author:
+#            Ted Phelps
+#
+#################################################################
 
 <sub-exp> ::= <disjunction>
 	[Accept]
@@ -34,7 +68,7 @@
 	[CreateFunction]
 
 <arg-list> ::= <arg-list> COMMA <value>
-	[Function]
+	[ExtendArgList]
 <arg-list> ::= <value>
 	[CreateArgList]
 
@@ -81,15 +115,15 @@
 <predicate> ::= EQ
 	[PredicateFromEQ]
 <predicate> ::= NEQ
-	[Function]
+	[PredicateFromNEQ]
 <predicate> ::= LT
-	[Function]
+	[PredicateFromLT]
 <predicate> ::= GT
-	[Function]
+	[PredicateFromGT]
 <predicate> ::= LE
 	[PredicateFromLE]
 <predicate> ::= GE
-	[Function]
+	[PredicateFromGE]
 
 
 #
@@ -97,26 +131,26 @@
 #
 
 <bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>
-	[Function]
+	[ExtendBitDisjunction]
 <bit-disjunction> ::= <bit-xor-exp>
 	[BitDisjunctionFromBitXorExp]
 
 <bit-xor-exp> ::= <bit-xor-exp> BIT_XOR <bit-conjunction>
-	[Function]
+	[ExtendBitXorExp]
 <bit-xor-exp> ::= <bit-conjunction>
 	[BitXorExpFromBitConjunction]
 
 <bit-conjunction> ::= <bit-conjunction> BIT_AND <bit-shift-exp>
-	[Function]
+	[ExtendBitConjunction]
 <bit-conjunction> ::= <bit-shift-exp>
 	[BitConjunctionFromBitShiftExp]
 
 <bit-shift-exp> ::= <bit-shift-exp> BIT_SHL <sum>
-	[Function]
+	[ExtendBitSHL]
 <bit-shift-exp> ::= <bit-shift-exp> BIT_SHR <sum>
-	[Function]
+	[ExtendBitSHR]
 <bit-shift-exp> ::= <bit-shift-exp> BIT_LSR <sum>
-	[Function]
+	[ExtendBitLSR]
 <bit-shift-exp> ::= <sum>
 	[BitShiftExpFromSum]
 
@@ -130,7 +164,7 @@
 <product> ::= <product> TIMES <num-exp>
 	[ProductFromTimesExp]
 <product> ::= <product> DIV <num-exp>
-	[Function]
+	[ProductFromDivExp]
 <product> ::= <product> MOD <num-exp>
 	[ProductFromModExp]
 <product> ::= <num-exp>
@@ -153,64 +187,11 @@
 <num-value> ::= <name>
 	[NumValueFromName]
 <num-value> ::= <function-exp>
-	[NumValueFromFunctionExp]
+	[Function]
 <num-value> ::= LPAREN <value> RPAREN
 	[CreateNestedNumValue]
 
-
-# The following productions let us use just about anything as an
-# attribute name.  Thus expressions such as the following are
-# completely valid, if somewhat confusing:
-#
-#	== != && || ^^ <= >
-#
-# The same expression, except with the attribute names wrapped in
-# square brackets would read as follows:
-#
-#	[==] != [&&] || [^^] <= [>]
-#
-# We're not saying it's a good idea to use "==" as an attribute name,
-# but we're not going to stop you either.
-
 <name> ::= ID
 	[NameFromId]
-<name> ::= EQ
-	[Function]
-<name> ::= NEQ
-	[Function]
-<name> ::= LT
-	[Function]
-<name> ::= GT
-	[Function]
-<name> ::= GE
-	[Function]
-<name> ::= LE
-	[Function]
-<name> ::= OR
-	[Function]
-<name> ::= XOR
-	[Function]
-<name> ::= AND
-	[Function]
-<name> ::= BIT_OR
-	[Function]
-<name> ::= BIT_XOR
-	[Function]
-<name> ::= BIT_AND
-	[Function]
-<name> ::= BIT_SHL
-	[Function]
-<name> ::= BIT_SHR
-	[Function]
-<name> ::= BIT_LSR
-	[Function]
-<name> ::= PLUS
-	[Function]
-<name> ::= MOD
-	[Function]
-<name> ::= TIMES
-	[Function]
-<name> ::= DIV
-	[Function]
 
 
