@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.27 1999/02/17 00:32:22 phelps Exp $ */
+/* $Id: Grammar.c,v 1.28 1999/02/17 00:43:40 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -298,7 +298,7 @@ static void PrintMacros(Grammar self, FILE *out)
     fprintf(out, "#define IS_ACCEPT(action) ((action) == %d)\n",
 	    self -> production_count + self -> kernel_count);
     fprintf(out, "#define IS_REDUCE(action) ((action) < %d)\n", self -> production_count);
-    fprintf(out, "#define IS_SHIFT(action) (! IS_REDUCE(action))\n");
+    fprintf(out, "#define IS_SHIFT(action) (! IS_REDUCE(action) && ! IS_ERROR(action))\n");
     fprintf(out, "#define REDUCTION(action) (action)\n");
     fprintf(out, "#define REDUCE_GOTO(state, production) \\\n");
     fprintf(out, "    (goto_table[state][production -> nonterm_type])\n");
