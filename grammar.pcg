@@ -1,0 +1,11 @@
+<grammar> ::= <production-list> .
+
+<production-list> ::= <production-list> <production> .
+<production-list> ::= <production> .
+
+<production> ::= nonterm derives <exp-list> stop .
+
+<exp-list> ::= <exp-list> nonterm .
+<exp-list> ::= <exp-list> term .
+<exp-list> ::= nonterm .
+<exp-list> ::= term .
