@@ -1,4 +1,4 @@
-/* $Id: Grammar.h,v 1.3 1999/02/08 19:44:03 phelps Exp $
+/* $Id: Grammar.h,v 1.4 1999/02/08 23:18:27 phelps Exp $
  *
  * A Grammar is a collection of Productions which, together with a
  * starting non-terminal, construe a language.  The Grammar can be
@@ -38,5 +38,8 @@ int Grammar_encode(Grammar self, Production production, int offset);
 
 /* Answers the Production and offset encoded in the integer */
 int Grammar_decode(Grammar self, int number, Production *production_return);
+
+/* Construct the set of LR(0) states */
+void Grammar_getLR0States(Grammar self);
 
 #endif /* GRAMMAR_H */

@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.6 1999/02/08 21:49:34 phelps Exp $ */
+/* $Id: Grammar.c,v 1.7 1999/02/08 23:18:26 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,27 +37,6 @@ struct Grammar_t
  * Static functions
  *
  */
-
-/* test the kernel generation stuff */
-static void FOON(Grammar self)
-{
-    Kernel kernel;
-    int count = self -> nonterminal_count + self -> terminal_count;
-    Kernel *table;
-    int index;
-
-    kernel = Kernel_alloc(self, self -> productions[0]);
-    Kernel_debug(kernel, stdout);
-
-    table = Kernel_getGotoTable(kernel);
-    for (index = 0; index < count; index++)
-    {
-	if (table[index] != NULL)
-	{
-	    Kernel_debug(table[index], stdout);
-	}
-    }
-}
 
 
 /* Mark the box that indicates that non-terminal x generates non-terminal x */
@@ -125,10 +104,18 @@ static void PopulateProductions(Production production, Grammar self, int *index)
     }
 }
 
+
+/* Match two integers */
+static int Equals(int x, int y)
+{
+    return x == y;
+}
+
 /* Updates the goto table for the given production and offset */
 static void UpdateGoto(Grammar self, List *table, Production production, int offset)
 {
     Component component = Production_getComponent(production, offset);
+    int pair;
     int index;
 
     /* Figure out what the index should be */
@@ -141,14 +128,25 @@ static void UpdateGoto(Grammar self, List *table, Production production, int off
 	index = self -> nonterminal_count + Terminal_getIndex((Terminal) component);
     }
 
+    /* Compute the encoded pair */
+    pair = Grammar_encode(self, production, offset + 1);
+
     /* Make sure the table has a List at that index */
     if (table[index] == NULL)
     {
 	table[index] = List_alloc();
     }
+    /* Make sure the item isn't already in the List */
+    else
+    {
+ 	if (List_findFirstWith(table[index], (ListFindWithFunc)Equals, (void *)pair) != NULL)
+	{
+	    return;
+	}
+    }
 
     /* Append the encoded item to the list */
-    List_addLast(table[index], (void *) Grammar_encode(self, production, offset + 1));
+    List_addLast(table[index], (void *) pair);
 }
 
 /* Populates the Goto table with the Productions at offset 0 */
@@ -188,7 +186,6 @@ Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_coun
     self -> generates = (char **)calloc(nonterminal_count, sizeof(char *));
     List_doWithWith(productions, PopulateProductions, self, &index);
 
-    FOON(self);
     return self;
 }
 
@@ -239,28 +236,28 @@ void Grammar_computeGoto(Grammar self, List *table, int number)
 {
     Production production;
     int offset = Grammar_decode(self, number, &production);
-    Component component = Production_getComponent(production, offset);
 
     /* If the kernel production has more components, then add them to the list */
     if (offset < Production_getCount(production))
     {
+	Component component = Production_getComponent(production, offset);
 	UpdateGoto(self, table, production, offset);
-    }
 
-    /* If the Component is a nonterminal, then compute the Goto for
-     * all of the productions of all of the non-terminals in the
-     * generates table for this non-terminal */
-    if (Component_isNonterminal(component))
-    {
-	int index = Nonterminal_getIndex((Nonterminal) component);
-	int j;
-
-	for (j = 0; j < self -> nonterminal_count; j++)
+	/* If the Component is a nonterminal, then compute the Goto for
+	 * all of the productions of all of the non-terminals in the
+	 * generates table for this non-terminal */
+	if (Component_isNonterminal(component))
 	{
-	    if (self -> generates[index][j] != 0)
+	    int index = Nonterminal_getIndex((Nonterminal) component);
+	    int j;
+
+	    for (j = 0; j < self -> nonterminal_count; j++)
 	    {
-		List list = self -> productionsByNonterminal[j];
-		List_doWithWith(list, PopulateGotoTable, self, table);
+		if (self -> generates[index][j] != 0)
+		{
+		    List list = self -> productionsByNonterminal[j];
+		    List_doWithWith(list, PopulateGotoTable, self, table);
+		}
 	    }
 	}
     }
@@ -280,4 +277,42 @@ int Grammar_decode(Grammar self, int number, Production *production_return)
     int count = self -> production_count;
     *production_return = self -> productions[count + number % count - 1];
     return - (number / count);
+}
+
+/* Construct the set of LR(0) states */
+void Grammar_getLR0States(Grammar self)
+{
+    List list = List_alloc();
+    List queue = List_alloc();
+    Kernel kernel = Kernel_alloc(self, self -> productions[0]);
+    int count = self -> nonterminal_count + self -> terminal_count;
+
+    List_addLast(list, kernel);
+    List_addLast(queue, kernel);
+
+    /* Loop until we don't have anything left on the queue */
+    while ((kernel = List_dequeue(queue)) != NULL)
+    {
+	Kernel *table;
+	int index;
+
+	/* Print the current kernel */
+	Kernel_debug(kernel, stdout);
+
+	/* Get the goto table for the kernel */
+	table = Kernel_getGotoTable(kernel);
+
+	/* Walk through it to see if we've already got those Kernel items */
+	for (index = 0; index < count; index++)
+	{
+	    Kernel k = table[index];
+	    if ((k != NULL) && (List_findFirstWith(list, (ListFindWithFunc)Kernel_equals, k) == NULL))
+	    {
+		List_addLast(list, k);
+		List_addLast(queue, k);
+	    }
+	}
+    }
+
+    printf("%ld states\n", List_size(list));
 }
