@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.5 1999/02/08 18:29:24 phelps Exp $ */
+/* $Id: Parser.c,v 1.6 1999/02/11 05:58:27 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -362,7 +362,7 @@ Parser Parser_alloc(AcceptCallback callback, void *context)
     self -> production_count = 0;
     self -> nonterminal_count = 0;
     self -> nonterminals = Hashtable_alloc(101);
-    self -> terminal_count = 0;
+    self -> terminal_count = 1;
     self -> terminals = Hashtable_alloc(101);
     self -> productions = List_alloc();
     return self;
