@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.4 1999/12/13 03:58:58 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.5 1999/12/13 04:19:04 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -88,6 +88,87 @@ static void compute_lalr_states(grammar_t self)
     exit(1);
 }
 
+
+/* Constructs a table mapping nonterminal indices to a null-terminated
+ * array of productions.  Returns NULL if something goes wrong. */
+static production_t **compute_productions_by_nonterminal(
+    int nonterminal_count,
+    int production_count,
+    production_t *productions)
+{
+    production_t **table;
+    production_t *productions_end = productions + production_count;
+    production_t *production;
+
+    /* Allocate memory for a new table */
+    table = (production_t **)calloc(nonterminal_count, sizeof(production_t *));
+    if (table == NULL)
+    {
+	return NULL;
+    }
+
+    /* Popluate it */
+    for (production = productions; production < productions_end; production++)
+    {
+	int index = production_get_nonterminal_index(*production);
+	production_t *array;
+	int count = 0;
+
+	/* If there is no entry for the nonterminal then create one */
+	if ((array = table[index]) == NULL)
+	{
+	    if ((array = (production_t *)malloc(2 * sizeof(production_t))) == NULL)
+	    {
+		/* FIX THIS: memory leak */
+		free(table);
+		return NULL;
+	    }
+
+	    count = 0;
+	}
+	else
+	{
+	    /* Count the number of entries so far */
+	    for (count = 0; array[count] != NULL; count++);
+
+	    /* Enlarge the array */
+	    if ((array = (production_t *)realloc(array, (count + 2) * sizeof(production_t))) == NULL)
+	    {
+		/* FIX THIS: memory leak */
+		free(table);
+		return NULL;
+	    }
+	}
+
+	array[count] = *production;
+	array[count + 1] = NULL;
+	table[index] = array;
+    }
+
+    return table;
+}
+
+/* Verifies that each nonterminal has at least on production rule */
+static int verify_productions_by_nonterminal(grammar_t self)
+{
+    int index;
+    int result = 0;
+
+    /* Do a sanity check -- there should be no empty entries */
+    for (index = 0; index < self -> nonterminal_count; index++)
+    {
+	if (self -> productions_by_nonterminal[index] == NULL)
+	{
+	    fprintf(stderr, "error: no production for nonterminal ");
+	    component_print(self -> nonterminals[index], stderr);
+	    fprintf(stderr, "\n");
+	    result = -1;
+	}
+    }
+
+    return result;
+}
+
 /* Allocates and initializes a new nonterminal grammar_t */
 grammar_t grammar_alloc(
     int production_count, production_t *productions,
@@ -95,8 +176,6 @@ grammar_t grammar_alloc(
     int nonterminal_count, component_t *nonterminals)
 {
     grammar_t self;
-    int i;
-    int failed = 0;
 
     /* Allocate space for a new grammar_t */
     if ((self = (grammar_t)malloc(sizeof(struct grammar))) == NULL)
@@ -113,65 +192,19 @@ grammar_t grammar_alloc(
     self -> nonterminals = nonterminals;
     self -> productions_by_nonterminal = NULL;
 
-    /* Allocate the table */
-    if ((self -> productions_by_nonterminal = (production_t **)calloc(
-	nonterminal_count, sizeof(production_t *))) == NULL)
+    /* Compute the productions_by_nonterminal */
+    if ((self -> productions_by_nonterminal = 
+	compute_productions_by_nonterminal(
+	    nonterminal_count,
+	    production_count,
+	    productions)) == NULL)
     {
 	grammar_free(self);
 	return NULL;
     }
 
-    /* Populate the table */
-    for (i = 0; i < production_count; i++)
-    {
-	production_t production = productions[i];
-	int j = component_get_index(production_get_nonterminal(production));
-	production_t *array;
-	int count = 0;
-
-	/* If there is no entry for the nonterminal then create one */
-	if ((array = self -> productions_by_nonterminal[j]) == NULL)
-	{
-	    if ((array = (production_t *)malloc(2 * sizeof(production_t))) == NULL)
-	    {
-		grammar_free(self);
-		return NULL;
-	    }
-
-	    count = 0;
-	}
-	else
-	{
-	    /* Count the number of entries so far */
-	    for (count = 0; array[count] != NULL; count++);
-
-	    /* Enlarge the array */
-	    if ((array = (production_t *)realloc(array, (count + 2) * sizeof(production_t))) == NULL)
-	    {
-		grammar_free(self);
-		return NULL;
-	    }
-	}
-
-	array[count] = production;
-	array[count + 1] = NULL;
-	self -> productions_by_nonterminal[j] = array;
-    }
-
-    /* Do a sanity check -- there should be no empty entries */
-    for (i = 0; i < nonterminal_count; i++)
-    {
-	if (self -> productions_by_nonterminal[i] == NULL)
-	{
-	    fprintf(stderr, "error: no production for nonterminal ");
-	    component_print(self -> nonterminals[i], stderr);
-	    fprintf(stderr, "\n");
-	    failed = 1;
-	}
-    }
-
-    /* See if we passed the sanity check */
-    if (failed)
+    /* Make sure that it makes sense */
+    if (verify_productions_by_nonterminal(self) < 0)
     {
 	grammar_free(self);
 	return NULL;
