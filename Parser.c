@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.13 1999/02/17 00:33:29 phelps Exp $ */
+/* $Id: Parser.c,v 1.14 1999/02/19 06:59:29 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,38 +137,19 @@ static void DecodeTerminal(char *key, Terminal terminal, Terminal *array)
 /* Perform all possible reductions and finally shift in the terminal */
 static void ShiftReduce(Parser self, terminal_t type, void *value)
 {
-    while (1)
+    int state;
+    int action;
+
+    /* Reduce as many times as possible */
+    while (IS_REDUCE(action = sr_table[state = Top(self)][type]))
     {
-	int state = Top(self);
-	int action = sr_table[state][type];
 	struct production *production;
 	int reduction;
 	void *result;
 
-	/* Watch for errors */
-	if (IS_ERROR(action))
-	{
-	    fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
-	    exit(0);
-	}
-
-	/* Accept if we can */
-	if (IS_ACCEPT(action))
-	{
-	    Accept(self);
-	    return;
-	}
-
-	/* Shift if we can */
-	if (IS_SHIFT(action))
-	{
-	    Push(self, SHIFT_GOTO(action), value);
-	    return;
-	}
-
-	/* Locate the production we're going to use to reduce */
+	/* Locate the production rule to use for the reduction */
 	reduction = REDUCTION(action);
-	production = &productions[reduction];
+	production = productions + reduction;
 
 	/* Pop stuff off of the stack */
 	Pop(self, production -> count);
@@ -178,6 +159,27 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
 
 	/* Push the result of the reduction back onto the stack */
 	Push(self, REDUCE_GOTO(Top(self), production), result);
+    }
+
+    /* Try to shift */
+    if (IS_SHIFT(action))
+    {
+	Push(self, SHIFT_GOTO(action), value);
+	return;
+    }
+
+    /* Accept if we can */
+    if (IS_ACCEPT(action))
+    {
+	Accept(self);
+	return;
+    }
+
+    /* Watch for errors */
+    if (IS_ERROR(action))
+    {
+	fprintf(stderr, "*** ERROR (state=%d, type=%d)\n", state, type);
+	exit(0);
     }
 }
 
