@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.1 1999/02/08 18:28:06 phelps Exp $ */
+/* $Id: Kernel.c,v 1.2 1999/02/08 19:44:04 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +45,15 @@ Kernel Alloc(Grammar grammar, int count)
     return self;
 }
 
+
+/* Copy the kernel items from a List to an actual Kernel */
+static void PopulateKernel(int number, Kernel self, int *index)
+{
+    self -> pairs[(*index)++] = number;
+}
+
+
+
 /*
  *
  * Exported functions
@@ -78,12 +87,49 @@ void Kernel_debug(Kernel self, FILE *out)
 
     fprintf(out, "Kernel %p\n", self);
     fprintf(out, "  Grammar=%p\n", self -> grammar);
-    fprintf(out, "  count=%d\n", self -> count);
     for (index = 0; index < self -> count; index++)
     {
-	offset = Grammar_decode(self -> grammar, pairs[index], &production);
-	fputs("    %d: ", out);
-	Production_printWithOffset(production, offset);
+	offset = Grammar_decode(self -> grammar, self -> pairs[index], &production);
+	fprintf(out, "  %d: ", index);
+	Production_printWithOffset(production, out, offset);
 	fputc('\n', out);
     }
+
+    fputc('\n', out);
+}
+
+/* Answers the receiver's GotoTable */
+Kernel *Kernel_getGotoTable(Kernel self)
+{
+    List *table;
+    int index;
+    int count = Grammar_nonterminalCount(self -> grammar) +
+	Grammar_terminalCount(self -> grammar);
+    Kernel *result;
+
+    /* Make space in a table */
+    table = (List *)calloc(count, sizeof(List));
+
+    /* Pass the table off to the Grammar with each of our pairs */
+    for (index = 0; index < self -> count; index++)
+    {
+	Grammar_computeGoto(self -> grammar, table, self -> pairs[index]);
+    }
+
+    /* Construct Kernels out of each of the Lists */
+    result = (Kernel *)calloc(count, sizeof(Kernel));
+    for (index = 0; index < count; index++)
+    {
+	if (table[index] != NULL)
+	{
+	    int i = 0;
+
+	    result[index] = Alloc(self -> grammar, List_size(table[index]));
+	    List_doWithWith(table[index], PopulateKernel, result[index], &i);
+	    List_free(table[index]);
+	}
+    }
+
+    free(table);
+    return result;
 }

@@ -1,9 +1,11 @@
-/* $Id: Grammar.c,v 1.3 1999/02/08 18:28:30 phelps Exp $ */
+/* $Id: Grammar.c,v 1.4 1999/02/08 19:43:14 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "Grammar.h"
+#include "Kernel.h"
 #include "Production.h"
+#include "Terminal.h"
 
 struct Grammar_t
 {
@@ -35,6 +37,28 @@ struct Grammar_t
  * Static functions
  *
  */
+
+/* test the kernel generation stuff */
+static void FOON(Grammar self)
+{
+    Kernel kernel;
+    int count = self -> nonterminal_count + self -> terminal_count;
+    Kernel *table;
+    int index;
+
+    kernel = Kernel_alloc(self, self -> productions[0]);
+    Kernel_debug(kernel, stdout);
+
+    table = Kernel_getGotoTable(kernel);
+    for (index = 0; index < count; index++)
+    {
+	if (table[index] != NULL)
+	{
+	    Kernel_debug(table[index], stdout);
+	}
+    }
+}
+
 
 /* Mark the box that indicates that non-terminal x generates non-terminal x */
 static void MarkGenerates(Grammar self, int x, int y)
@@ -85,6 +109,7 @@ static void PopulateProductions(Production production, Grammar self, int *index)
     {
 	self -> productionsByNonterminal[i] = List_alloc();
 	self -> generates[i] = (char *)calloc(self -> nonterminal_count, sizeof(char));
+	self -> generates[i][i] = 1;
     }
 
     /* Append the production to the end of the list for the non-terminal */
@@ -98,6 +123,38 @@ static void PopulateProductions(Production production, Grammar self, int *index)
 	int j = Nonterminal_getIndex((Nonterminal)component);
 	MarkGenerates(self, i, j);
     }
+}
+
+/* Updates the goto table for the given production and offset */
+static void UpdateGoto(Grammar self, List *table, Production production, int offset)
+{
+    Component component = Production_getComponent(production, offset);
+    int index;
+
+    /* Figure out what the index should be */
+    if (Component_isNonterminal(component))
+    {
+	index = Nonterminal_getIndex((Nonterminal) component);
+    }
+    else
+    {
+	index = self -> nonterminal_count + Terminal_getIndex((Terminal) component);
+    }
+
+    /* Make sure the table has a List at that index */
+    if (table[index] == NULL)
+    {
+	table[index] = List_alloc();
+    }
+
+    /* Append the encoded item to the list */
+    List_addLast(table[index], (void *) Grammar_encode(self, production, offset + 1));
+}
+
+/* Populates the Goto table with the Productions at offset 0 */
+static void PopulateGotoTable(Production production, Grammar self, List *table)
+{
+    UpdateGoto(self, table, production, 0);
 }
 
 
@@ -131,6 +188,7 @@ Grammar Grammar_alloc(List productions, int nonterminal_count, int terminal_coun
     self -> generates = (char **)calloc(nonterminal_count, sizeof(char *));
     List_doWithWith(productions, PopulateProductions, self, &index);
 
+    FOON(self);
     return self;
 }
 
@@ -158,6 +216,53 @@ void Grammar_debug(Grammar self, FILE *out)
 	fprintf(out, "  %d ", index);
 	List_doWith(self -> productionsByNonterminal[index], Production_print, out);
 	fprintf(out, "\n");
+    }
+}
+
+
+/* Answers the number of nonterminals in the receiver */
+int Grammar_nonterminalCount(Grammar self)
+{
+    return self -> nonterminal_count;
+}
+
+/* Answers the number of terminals in the receiver */
+int Grammar_terminalCount(Grammar self)
+{
+    return self -> terminal_count;
+}
+
+
+/* Computes the contribute of the encoded production/offset (and
+ * derived productions) to the goto table */
+void Grammar_computeGoto(Grammar self, List *table, int number)
+{
+    Production production;
+    int offset = Grammar_decode(self, number, &production);
+    Component component = Production_getComponent(production, offset);
+
+    /* If the kernel production has more components, then add them to the list */
+    if (offset < Production_getCount(production))
+    {
+	UpdateGoto(self, table, production, offset);
+    }
+
+    /* If the Component is a nonterminal, then compute the Goto for
+     * all of the productions of all of the non-terminals in the
+     * generates table for this non-terminal */
+    if (Component_isNonterminal(component))
+    {
+	int index = Nonterminal_getIndex((Nonterminal) component);
+	int j;
+
+	for (j = 0; j < self -> nonterminal_count; j++)
+	{
+	    if (self -> generates[index][j] != 0)
+	    {
+		List list = self -> productionsByNonterminal[j];
+		List_doWithWith(list, PopulateGotoTable, self, table);
+	    }
+	}
     }
 }
 
