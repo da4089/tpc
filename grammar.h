@@ -1,4 +1,5 @@
 #define IS_ERROR(action) ((action) == 0)
+#define IS_ACCEPT(action) ((action) == 20)
 #define IS_REDUCE(action) ((action) < 8)
 #define IS_SHIFT(action) (! IS_REDUCE(action))
 #define REDUCTION(action) (action)
@@ -50,13 +51,14 @@ static struct production productions[8] =
 };
 
 #define ERR 0
+#define ACC 20
 #define R(x) (x)
 #define S(x) (x + 8)
 
 static int sr_table[12][5] =
 {
     { ERR, S(3), ERR, ERR, ERR },
-    { ERR, S(3), ERR, ERR, ERR },
+    { ACC, S(3), ERR, ERR, ERR },
     { R(2), R(2), ERR, ERR, ERR },
     { ERR, ERR, S(5), ERR, ERR },
     { R(1), R(1), ERR, ERR, ERR },
