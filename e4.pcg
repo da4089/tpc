@@ -1,6 +1,29 @@
+# $Id: e4.pcg,v 1.9 1999/02/19 10:32:13 phelps Exp $
+#
+# Copyright goes here
+#
+# Author: Ted Phelps
+
 <sub-exp> ::= <disjunction>
 	[Accept]
 
+#
+# We introduce <function-exp> in order to get around the inherent
+# ambiguity of the grammar.  Without these two productions, there is
+# no way to reduce the following two sentences:
+#
+#	(exists(FOO))
+#	(sizeof(BOB)) == 3
+#
+# By adding these two productions, the decision about whether these
+# the function returns a boolean value or a number/string is delayed
+# until we have enough information to do the proper reduction
+#
+# Note that the first function-exp production must appear *before* the 
+# <bool-exp> ::= <function-exp> or <num-value> ::= <function-exp>
+# productions because the parser compiler will use the first listed
+# production when it encounters this ambiguity.
+#
 
 <function-exp> ::= LPAREN <function-exp> RPAREN
 	[CreateNestedFunctionExp]
@@ -9,6 +32,16 @@
 
 <function> ::= ID LPAREN <arg-list> RPAREN
 	[CreateFunction]
+
+<arg-list> ::= <arg-list> COMMA <value>
+	[Function]
+<arg-list> ::= <value>
+	[CreateArgList]
+
+
+#
+# Boolean expression productions
+#
 
 <disjunction> ::= <disjunction> OR <xor-exp>
 	[ExtendDisjunction]
@@ -34,10 +67,16 @@
 <bool-exp> ::= LPAREN <disjunction> RPAREN
 	[CreateNestedBoolExp]
 
+
 <value> ::= STRING
 	[ValueFromString]
 <value> ::= <bit-disjunction>
 	[ValueFromBitDisjunction]
+
+
+#
+# Comparison predicates
+#
 
 <predicate> ::= EQ
 	[PredicateFromEQ]
@@ -52,6 +91,10 @@
 <predicate> ::= GE
 	[Function]
 
+
+#
+# String and numeric expression productions
+#
 
 <bit-disjunction> ::= <bit-disjunction> BIT_OR <bit-xor-exp>
 	[Function]
@@ -115,6 +158,20 @@
 	[CreateNestedNumValue]
 
 
+# The following productions let us use just about anything as an
+# attribute name.  Thus expressions such as the following are
+# completely valid, if somewhat confusing:
+#
+#	== != && || ^^ <= >
+#
+# The same expression, except with the attribute names wrapped in
+# square brackets would read as follows:
+#
+#	[==] != [&&] || [^^] <= [>]
+#
+# We're not saying it's a good idea to use "==" as an attribute name,
+# but we're not going to stop you either.
+
 <name> ::= ID
 	[NameFromId]
 <name> ::= EQ
@@ -156,9 +213,4 @@
 <name> ::= DIV
 	[Function]
 
-
-<arg-list> ::= <arg-list> COMMA <value>
-	[Function]
-<arg-list> ::= <value>
-	[CreateArgList]
 
