@@ -29,15 +29,11 @@ static void parser_cb(void *ignored, grammar_t grammar)
 {
     if (debug)
     {
-	grammar_print_kernels(grammar, stdout);
+	grammar_print_kernels(grammar, stderr);
     }
-/*
-    else
-    {
-	Grammar_printTable(grammar, stdout);
-    }
-*/
-    grammar_print(grammar, stdout);
+
+    /* Print out the parse table */
+    grammar_print_table(grammar, stdout);
 }
 
 /* Prints out the usage message */
