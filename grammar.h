@@ -1,7 +1,7 @@
 #define IS_ERROR(action) ((action) == 0)
 #define IS_ACCEPT(action) ((action) == 20)
 #define IS_REDUCE(action) ((action) < 8)
-#define IS_SHIFT(action) (! IS_REDUCE(action))
+#define IS_SHIFT(action) (! IS_REDUCE(action) && ! IS_ERROR(action))
 #define REDUCTION(action) (action)
 #define REDUCE_GOTO(state, production) \
     (goto_table[state][production -> nonterm_type])
