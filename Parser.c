@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.11 1999/02/16 11:12:05 phelps Exp $ */
+/* $Id: Parser.c,v 1.12 1999/02/16 12:35:46 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,50 +17,35 @@
  */
 #define STACK_SIZE 16
 
-/* The types of terminals */
-typedef enum
-{
-    DerivesValue,
-    NonterminalValue,
-    TerminalValue,
-    StopValue
-} TerminalType;
-
-/* The types of non-terminals */
-typedef enum
-{
-    ProductionValue,
-    ListValue
-} NonterminalType;
-
-
-/* The ReduceFunction type */
-typedef void (*ReduceFunction)(Parser self);
-
 
 /*
  *
  * Static function headers
  *
  */
+
+/* Production reduction functions */
+static void *Accept(Parser self);
+static void *ProductionListExtend(Parser self);
+static void *ProductionListCreate(Parser self);
+static void *ProductionCreate(Parser self);
+static void *ExpListAddNonterminal(Parser self);
+static void *ExpListAddTerminal(Parser self);
+static void *ExpListCreateNonterminal(Parser self);
+static void *ExpListCreateTerminal(Parser self);
+
+/* Can't include this before the reduction function headers */
+#include "grammar.h"
+
 static void Push(Parser self, int state, void *value);
 static void Pop(Parser self, int count);
 static int Top(Parser self);
+static void DecodeNonterminal(char *key, Nonterminal nonterminal, Nonterminal *array);
+static void DecodeTerminal(char *key, Terminal terminal, Terminal *array);
+static void ShiftReduce(Parser self, terminal_t type, void *value);
 
-static void ShiftReduce(Parser self, TerminalType type, void *value);
 
-/* Production reducers */
-static void Accept(Parser self, int reduction);
-static void ProductionListExtend(Parser self, int reduction);
-static void ProductionListCreate(Parser self, int reduction);
-static void ProductionCreate(Parser self, int reduction);
-static void ExpListAddNonterminal(Parser self, int reduction);
-static void ExpListAddTerminal(Parser self, int reduction);
-static void ExpListCreateNonterminal(Parser self, int reduction);
-static void ExpListCreateTerminal(Parser self, int reduction);
-
-#include "grammar.h"
-
+/* Helper functions */
 static Nonterminal FindOrCreateNonterminal(Parser self, char *name);
 static Terminal FindOrCreateTerminal(Parser self, char *name);
 
@@ -100,9 +85,6 @@ struct Parser_t
 
     /* The receiver's table of terminals */
     Hashtable terminals;
-
-    /* The receiver's List of Productions */
-    List productions;
 };
 
 
@@ -159,7 +141,9 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
     {
 	int state = Top(self);
 	int action = sr_table[state][type];
+	struct production *production;
 	int reduction;
+	void *result;
 
 	/* Watch for errors */
 	if (IS_ERROR(action))
@@ -167,7 +151,7 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
 	    /* If we're in state #1 and the input is TT_EOF, then accept */
 	    if ((state == 1) && (type == TT_EOF))
 	    {
-		Accept(self, 0);
+		Accept(self);
 		return;
 	    }
 
@@ -183,9 +167,18 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
 	    return;
 	}
 
-	/* Otherwise reduce and repeat */
+	/* Locate the production we're going to use to reduce */
 	reduction = REDUCTION(action);
-	productions[reduction](self, reduction);
+	production = &productions[reduction];
+
+	/* Pop stuff off of the stack */
+	Pop(self, production -> count);
+
+	/* Reduce */
+	result = (production -> function)(self);
+
+	/* Push the result of the reduction back onto the stack */
+	Push(self, REDUCE_GOTO(Top(self), production), result);
     }
 }
 
@@ -194,7 +187,7 @@ static void ShiftReduce(Parser self, terminal_t type, void *value)
 
 
 /* Reduce: <START> ::= <production-list> */
-static void Accept(Parser self, int reduction)
+static void *Accept(Parser self)
 {
     List productions;
     Grammar grammar;
@@ -226,16 +219,15 @@ static void Accept(Parser self, int reduction)
     {
 	(*self -> callback)(self -> context, grammar);
     }
+
+    return NULL;
 }
 
 /* Reduce: <production-list> ::= <production-list> <production> */
-static void ProductionListExtend(Parser self, int reduction)
+static void *ProductionListExtend(Parser self)
 {
     List list;
     Production production;
-
-    /* Pop the list and production off the stack */
-    Pop(self, 2);
 
     /* Locate the list and production */
     list = (List) self -> value_top[0];
@@ -245,18 +237,15 @@ static void ProductionListExtend(Parser self, int reduction)
     List_addLast(list, production);
 
     /* Push the list back onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), list);
+    return list;
 }
 
 /* Reduce: <production-list> ::= <production> */
-static void ProductionListCreate(Parser self, int reduction)
+static void *ProductionListCreate(Parser self)
 {
     Production production;
     List list;
 
-    /* Pop the production off the stack */
-    Pop(self, 1);
-    
     /* Locate the production */
     production = (Production) self -> value_top[0];
 
@@ -265,19 +254,16 @@ static void ProductionListCreate(Parser self, int reduction)
     List_addLast(list, self -> value_top[0]);
 
     /* Push the list back onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), list);
+    return list;
 }
 
 /* Reduce: <production> ::= nonterm derives <exp-list> function */
-static void ProductionCreate(Parser self, int reduction)
+static void *ProductionCreate(Parser self)
 {
     Production production;
     Nonterminal nonterminal;
     char *function;
     List list;
-
-    /* Pop the old states */
-    Pop(self, 4);
 
     /* Look up the components of the production */
     nonterminal = (Nonterminal) self -> value_top[0];
@@ -289,17 +275,14 @@ static void ProductionCreate(Parser self, int reduction)
     free(function);
 
     /* Push the production onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), production);
+    return production;
 }
 
 /* Reduce: <exp-list> ::= <exp-list> nonterm */
-static void ExpListAddNonterminal(Parser self, int reduction)
+static void *ExpListAddNonterminal(Parser self)
 {
     List list;
     Nonterminal nonterminal;
-
-    /* Pop the list and nonterminal off the stack */
-    Pop(self, 2);
 
     /* Locate the list and nonterminal */
     list = (List) self -> value_top[0];
@@ -309,17 +292,14 @@ static void ExpListAddNonterminal(Parser self, int reduction)
     List_addLast(list, nonterminal);
 
     /* Push the list back onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), list);
+    return list;
 }
 
 /* Reduce: <exp-list> ::= <exp-list> term */
-static void ExpListAddTerminal(Parser self, int reduction)
+static void *ExpListAddTerminal(Parser self)
 {
     List list;
     Terminal terminal;
-
-    /* Pop the list and terminal off the stack */
-    Pop(self, 2);
 
     /* Locate the list and terminal */
     list = (List) self -> value_top[0];
@@ -329,17 +309,14 @@ static void ExpListAddTerminal(Parser self, int reduction)
     List_addLast(list, terminal);
 
     /* Push the list back onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), list);
+    return list;
 }
 
 /* Reduce: <exp-list> ::= nonterm */
-static void ExpListCreateNonterminal(Parser self, int reduction)
+static void *ExpListCreateNonterminal(Parser self)
 {
     List list;
     Nonterminal nonterminal;
-
-    /* Pop the nonterminal off the stack */
-    Pop(self, 1);
 
     /* Locate the nonterminal */
     nonterminal = (Nonterminal) self -> value_top[0];
@@ -349,17 +326,14 @@ static void ExpListCreateNonterminal(Parser self, int reduction)
     List_addLast(list, nonterminal);
 
     /* Push the list onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), list);
+    return list;
 }
 
 /* Reduce: <exp-list> ::= term */
-static void ExpListCreateTerminal(Parser self, int reduction)
+static void *ExpListCreateTerminal(Parser self)
 {
     List list;
     Terminal terminal;
-
-    /* Pop the terminal off the stack */
-    Pop(self, 1);
 
     /* Locate the terminal */
     terminal = (Terminal) self -> value_top[0];
@@ -369,7 +343,7 @@ static void ExpListCreateTerminal(Parser self, int reduction)
     List_addLast(list, terminal);
 
     /* Push the list onto the stack */
-    Push(self, REDUCE_GOTO(Top(self), reduction), list);
+    return list;
 }
 
 
