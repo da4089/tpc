@@ -55,7 +55,7 @@ static struct production productions[8] =
 #define R(x) (x)
 #define S(x) (x + 8)
 
-static char sr_table[12][5] =
+static unsigned char sr_table[12][5] =
 {
     { ERR, S(3), ERR, ERR, ERR },
     { ACC, S(3), ERR, ERR, ERR },
@@ -75,7 +75,7 @@ static char sr_table[12][5] =
 #undef R
 #undef S
 
-static char goto_table[12][4] = 
+static unsigned char goto_table[12][4] = 
 {
     { 0, 1, 2, 0 },
     { 0, 0, 4, 0 },
