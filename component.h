@@ -31,7 +31,7 @@
 #define COMPONENT_H
 
 #ifndef lint
-static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.6 1999/12/20 15:03:53 phelps Exp $";
+static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.7 1999/12/21 01:46:32 phelps Exp $";
 #endif /* lint */
 
 /* The component type */
@@ -39,13 +39,16 @@ typedef struct component *component_t;
 
 
 /* Allocates and initializes a new nonterminal component_t */
-component_t nonterminal_alloc(char *name, int index);
+component_t nonterminal_alloc(char *filename, int line, char *name, int index);
 
 /* Allocates and initializes a new terminal component_t */
-component_t terminal_alloc(char *name, int index);
+component_t terminal_alloc(char *filename, int line, char *name, int index);
 
 /* Releases the resources consumed by the receiver */
 void component_free(component_t self);
+
+/* Returns the filename and line number of the component's first mention */
+int component_get_origin(component_t self, char **filename_out);
 
 /* Pretty-prints the receiver */
 void component_print(component_t self, FILE *out);

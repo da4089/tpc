@@ -28,18 +28,25 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.9 1999/12/21 00:49:21 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.10 1999/12/21 01:46:32 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "component.h"
 
 typedef void (*print_func_t)(component_t self, FILE *out);
 
 struct component
 {
+    /* The name of the file which first referred to this component */
+    char *filename;
+
+    /* The line number of the file */
+    int line;
+
     /* Pretty-prints the receiver */
     print_func_t print;
 
@@ -51,7 +58,11 @@ struct component
 };
 
 /* Allocates and initializes a new component_t */
-static component_t component_alloc(char *name, int index)
+static component_t component_alloc(
+    char *filename,
+    int line,
+    char *name,
+    int index)
 {
     component_t self;
     int length = strlen(name);
@@ -62,9 +73,24 @@ static component_t component_alloc(char *name, int index)
 	return NULL;
     }
 
-    /* Initialize its contents */
+    /* Initialize its contents to sane values */
+    self -> filename = NULL;
+    self -> line = line;
     self -> index = index;
+
+    /* Copy the name into place */
     memcpy(self -> name, name, length + 1);
+
+    /* Copy the filename */
+    if (filename != NULL)
+    {
+	if ((self -> filename = strdup(filename)) == NULL)
+	{
+	    free(self);
+	    return NULL;
+	}
+    }
+
     return self;
 }
 
@@ -72,6 +98,13 @@ static component_t component_alloc(char *name, int index)
 void component_free(component_t self)
 {
     free(self);
+}
+
+/* Returns the filename and line number of the component's first mention */
+int component_get_origin(component_t self, char **filename_out)
+{
+    *filename_out = self -> filename;
+    return self -> line;
 }
 
 /* Pretty-prints the receiver */
@@ -122,12 +155,12 @@ static void terminal_print(component_t self, FILE *out)
 
 
 /* Allocates and initializes a new nonterminal component_t */
-component_t nonterminal_alloc(char *name, int index)
+component_t nonterminal_alloc(char *filename, int line, char *name, int index)
 {
     component_t self;
 
     /* Do some basic initialization */
-    if ((self = component_alloc(name, index)) == NULL)
+    if ((self = component_alloc(filename, line, name, index)) == NULL)
     {
 	return NULL;
     }
@@ -138,12 +171,12 @@ component_t nonterminal_alloc(char *name, int index)
 }
 
 /* Allocates and initializes a new terminal component_t */
-component_t terminal_alloc(char *name, int index)
+component_t terminal_alloc(char *filename, int line, char *name, int index)
 {
     component_t self;
 
     /* Do some basic initialization */
-    if ((self = component_alloc(name, index)) == NULL)
+    if ((self = component_alloc(filename, line, name, index)) == NULL)
     {
 	return NULL;
     }
