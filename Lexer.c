@@ -1,7 +1,8 @@
-/* $Id: Lexer.c,v 1.3 1999/02/08 09:24:28 phelps Exp $ */
+/* $Id: Lexer.c,v 1.4 1999/02/08 12:02:16 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "Lexer.h"
 #include "StringBuffer.h"
 
