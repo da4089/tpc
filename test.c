@@ -15,27 +15,178 @@ static void *Accept()
     return NULL;
 }
 
-static void *CreateDisjunction()
+static void *ExtendDisjunction()
+{
+    printf("<disjunction> ::= <disjunction> BOOL_OR <xor-exp>\n");
+    return NULL;
+}
+
+static void *DisjunctionFromXorExp()
 {
     printf("<disjunction> ::= <xor-exp>\n");
     return NULL;
 }
 
-static void *CreateXorExp()
+static void *ExtendConjunction()
+{
+    printf("<conjunction> ::= <conjunction> BOOL_AND <bool-exp>\n");
+    return NULL;
+}
+
+static void *XorExpFromConjunction()
 {
     printf("<xor-exp> ::= <conjunction>\n");
     return NULL;
 }
 
-static void *CreateConjunction()
+static void *ConjunctionFromBoolExp()
 {
     printf("<conjunction> ::= <bool-exp>\n");
+    return NULL;
+}
+
+
+static void *BoolExpFromComparison()
+{
+    printf("<bool-exp> ::= <value> <predicate> <value>\n");
     return NULL;
 }
 
 static void *BoolExpFromBoolFunction()
 {
     printf("<bool-exp> ::= <bool-function>\n");
+    return NULL;
+}
+
+static void *BoolExpFromNegation()
+{
+    printf("<bool-exp> ::= BANG <bool-exp>\n");
+    return NULL;
+}
+
+static void *CreateNestedBoolExp()
+{
+    printf("<bool-exp> ::= LPAREN <disjunction> RPAREN\n");
+    return NULL;
+}
+
+static void *NumValueFromValueFunction()
+{
+    printf("<num-value> ::= <value-function>\n");
+    return NULL;
+}
+
+static void *ValueFromString()
+{
+    printf("<value> ::= STRING\n");
+    return NULL;
+}
+
+static void *ValueFromBitDisjunction()
+{
+    printf("<value> ::= <bit-disjunction>\n");
+    return NULL;
+}
+
+static void *PredicateFromEQ()
+{
+    printf("<predicate> ::= EQ\n");
+    return NULL;
+}
+
+static void *PredicateFromLE()
+{
+    printf("<predicate> ::= LE\n");
+    return NULL;
+}
+
+static void *CreatePrimaryFunction()
+{
+    printf("<value-function> ::= PRIMARY LPAREN <value> RPAREN\n");
+    return NULL;
+}
+
+static void *BitDisjunctionFromBitXorExp()
+{
+    printf("<bit-disjunction> ::= <bit-xor-exp>\n");
+    return NULL;
+}
+
+static void *BitXorExpFromBitConjunction()
+{
+    printf("<bit-xor-exp> ::= <bit-conjunction>\n");
+    return NULL;
+}
+
+static void *BitConjunctionFromBitShiftExp()
+{
+    printf("<bit-conjunction> ::= <bit-shift-exp>\n");
+    return NULL;
+}
+
+static void *BitShiftExpFromSum()
+{
+    printf("<bit-shift-exp> ::= <sum>\n");
+    return NULL;
+}
+
+static void *SumFromPlusExp()
+{
+    printf("<sum> ::= <sum> PLUS <product>\n");
+    return NULL;
+}
+
+static void *SumFromMinusExp()
+{
+    printf("<sum> ::= <sum> MINUS <product>\n");
+    return NULL;
+}
+
+static void *SumFromProduct()
+{
+    printf("<sum> ::= <product>\n");
+    return NULL;
+}
+
+static void *ProductFromTimesExp()
+{
+    printf("<product> ::= <product> TIMES <num-exp>\n");
+    return NULL;
+}
+
+static void *ProductFromModExp()
+{
+    printf("<product> ::= <product> MOD <num-exp>\n");
+    return NULL;
+}
+
+static void *ProductFromNumExp()
+{
+    printf("<product> ::= <num-exp>\n");
+    return NULL;
+}
+
+static void *NumExpFromNumValue()
+{
+    printf("<num-exp> ::= <num-value>\n");
+    return NULL;
+}
+
+static void *NumValueFromINT32()
+{
+    printf("<num-value> ::= INT32\n");
+    return NULL;
+}
+
+static void *NumValueFromName()
+{
+    printf("<num-value> ::= <name>\n");
+    return NULL;
+}
+
+static void *CreateNestedNumValue()
+{
+    printf("<num-value> ::= LPAREN <value> RPAREN\n");
     return NULL;
 }
 
@@ -51,20 +202,33 @@ static void *CreateExistsFunction()
     return NULL;
 }
 
-static void *CreateInt32Function()
+static void *CreateIsInt32Function()
 {
     printf("<bool-function> ::= IS_INT32 LPAREN <name> RPAREN\n");
     return NULL;
 }
 
-static void *Function()
+static void *CreateRegexFunction()
 {
+    printf("<bool-function> ::= REGEX LPAREN <name> COMMA <arg-list> RPAREN\n");
     return NULL;
 }
 
-static void *CreateNestedBoolExp()
+static void *CreateDecomposeFunction()
 {
-    printf("<bool-exp> ::= LPAREN <disjunction> RPAREN\n");
+    printf("<value-function> ::= DECOMPOSE LPAREN <value> RPAREN\n");
+    return NULL;
+}
+
+static void *CreateArgList()
+{
+    printf("<arg-list> ::= <value>\n");
+    return NULL;
+}
+
+
+static void *Function()
+{
     return NULL;
 }
 
@@ -148,16 +312,37 @@ int main(int argc, char *argv[])
     *state_top = 0;
     printf("hello sailor\n");
 
+    ShiftReduce(TT_EXISTS, NULL);
     ShiftReduce(TT_LPAREN, NULL);
+    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_RPAREN, NULL);
+    ShiftReduce(TT_BOOL_OR, NULL);
+    ShiftReduce(TT_BANG, NULL);
     ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_PRIMARY, NULL);
+    ShiftReduce(TT_REGEX, NULL);
     ShiftReduce(TT_LPAREN, NULL);
-    ShiftReduce(TT_ID, NULL);
+    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_COMMA, NULL);
+    ShiftReduce(TT_STRING, ".*[Mm]ail.*");
     ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_RPAREN, NULL);
-    ShiftReduce(TT_RPAREN, NULL);
+    ShiftReduce(TT_BOOL_OR, NULL);
+    ShiftReduce(TT_ID, "TICKERTAPE");
     ShiftReduce(TT_EQ, NULL);
-    ShiftReduce(TT_STRING, NULL);
+    ShiftReduce(TT_STRING, "Rakoto");
+    ShiftReduce(TT_BOOL_OR, NULL);
+    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_EQ, NULL);
+    ShiftReduce(TT_STRING, "lawley-rcvstore");
+    ShiftReduce(TT_BOOL_OR, NULL);
+    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_EQ, NULL);
+    ShiftReduce(TT_STRING, "weather");
+    ShiftReduce(TT_BOOL_OR, NULL);
+    ShiftReduce(TT_ID, "TICKERTAPE");
+    ShiftReduce(TT_EQ, NULL);
+    ShiftReduce(TT_STRING, "fourskins");
+    ShiftReduce(TT_RPAREN, NULL);
+
     ShiftReduce(TT_EOF, NULL);
     return 0;
 }
