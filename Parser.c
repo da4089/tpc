@@ -1,4 +1,4 @@
-/* $Id: Parser.c,v 1.9 1999/02/12 08:58:31 phelps Exp $ */
+/* $Id: Parser.c,v 1.10 1999/02/16 09:32:30 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,65 +47,21 @@ static void Pop(Parser self, int count);
 static int Top(Parser self);
 
 static void ShiftReduce(Parser self, TerminalType type, void *value);
+
+/* Production reducers */
 static void Accept(Parser self);
-static void Reduce1(Parser self);
-static void Reduce2(Parser self);
-static void Reduce3(Parser self);
-static void Reduce4(Parser self);
-static void Reduce5(Parser self);
+static void ProductionListExtend(Parser self);
+static void ProductionListCreate(Parser self);
+static void ProductionCreate(Parser self);
+static void ExpListAddNonterminal(Parser self);
+static void ExpListAddTerminal(Parser self);
+static void ExpListCreateNonterminal(Parser self);
+static void ExpListCreateTerminal(Parser self);
+
+#include "grammar.h"
 
 static Nonterminal FindOrCreateNonterminal(Parser self, char *name);
 static Terminal FindOrCreateTerminal(Parser self, char *name);
-
-/* Shift destination states.  For a given state and input, indicates
- * which state to go to after a shift.  If the destination state is 0, 
- * then the input should not be shifted */
-static int shiftTable[][4] =
-{
-    { 0, 2, 0, 0 }, /* 0 */
-    { 0, 0, 0, 0 }, /* 1 */
-    { 3, 0, 0, 0 }, /* 2 */
-    { 0, 5, 6, 0 }, /* 3 */
-    { 0, 8, 9, 7 }, /* 4 */
-    { 0, 0, 0, 0 }, /* 5 */
-    { 0, 0, 0, 0 }, /* 6 */
-    { 0, 0, 0, 0 }, /* 7 */
-    { 0, 0, 0, 0 }, /* 8 */
-    { 0, 0, 0, 0 }, /* 9 */
-};
-
-/* The reduce table: maps Parser states to reduction functions.
- * NULL indicates that no reduction is possible for that state */
-ReduceFunction reduceTable[] =
-{
-    NULL, /* 0 */
-    Accept, /* 1 */
-    NULL, /* 2 */
-    NULL, /* 3 */
-    NULL, /* 4 */
-    Reduce4, /* 5 */
-    Reduce5, /* 6 */
-    Reduce1, /* 7 */
-    Reduce2, /* 8 */
-    Reduce3 /* 9 */
-};
-
-
-/* Figure out where to go after performing a reduction */
-static int gotoTable[][2] =
-{
-    { 1, 0 }, /* 0 */
-    { 0, 0 }, /* 1 */
-    { 0, 0 }, /* 2 */
-    { 0, 4 }, /* 3 */
-    { 0, 0 }, /* 4 */
-    { 0, 0 }, /* 5 */
-    { 0, 0 }, /* 6 */
-    { 0, 0 }, /* 7 */
-    { 0, 0 }, /* 8 */
-    { 0, 0 }, /* 9 */
-};
-
 
 
 /* The Parser data structure */
@@ -180,10 +136,38 @@ static int Top(Parser self)
 }
 
 
-/* Perform a Shift and then all possible reductions.  NOTE: this only 
- * works becouse our grammar is very simple.  We have no parser states 
- * for which both shift and reduce are possible */
-static void ShiftReduce(Parser self, TerminalType type, void *value)
+/* Perform all possible reductions and finally shift in the terminal */
+static void ShiftReduce(Parser self, terminal_t type, void *value)
+{
+    while (1)
+    {
+	int state = Top(self);
+	int action = sr_table[state][type];
+
+	/* Watch for errors */
+	if (IS_ERROR(action))
+	{
+	    fprintf(stderr, "*** ERROR\n");
+	    exit(0);
+	}
+
+	/* Shift if we can */
+	if (IS_SHIFT(action))
+	{
+	    Push(self, SHIFT_GOTO(action), value);
+	    return;
+	}
+
+	/* Otherwise reduce and repeat */
+	productions[REDUCTION(action)](self);
+    }
+}
+
+
+
+
+
+#if 0
 {
     int oldState = Top(self);
     int state = shiftTable[oldState][type];
@@ -205,13 +189,27 @@ static void ShiftReduce(Parser self, TerminalType type, void *value)
 	function(self);
     }
 }
+#endif
 
-/* Reduction 0: <START> ::= <production> */
+/* Reduce: <START> ::= <production-list> */
 static void Accept(Parser self)
+{
+    printf("ACCEPT\n");
+}
+
+/* Reduce: <production-list> ::= <production-list> <production> */
+static void ProductionListExtend(Parser self)
 {
     Pop(self, 1);
     List_addLast(self -> productions, *(self -> value_top));
 }
+
+/* Reduce: <production-list> ::= <production> */
+static void ProductionListCreate(Parser self)
+{
+    
+}
+
 
 /* Reduction 1: <production> ::= nonterm derives <exp-list> stop */
 static void Reduce1(Parser self)
