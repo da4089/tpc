@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.5 1999/02/08 20:38:17 phelps Exp $ */
+/* $Id: Grammar.c,v 1.6 1999/02/08 21:49:34 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -270,22 +270,14 @@ void Grammar_computeGoto(Grammar self, List *table, int number)
 /* Encodes a Production and offset in a single integer that sorts nicely */
 int Grammar_encode(Grammar self, Production production, int offset)
 {
-#if 1
-    return (- self -> production_count * offset) + Production_getIndex(production);
-#else
-    return (self -> production_count * offset) + Production_getIndex(production);
-#endif
+    int count = self -> production_count;
+    return (Production_getIndex(production) + 1) - (count * (offset + 1));
 }
 
 /* Answers the Production and offset encoded in the integer */
 int Grammar_decode(Grammar self, int number, Production *production_return)
 {
-#if 1
-    *production_return = self -> productions[(self -> production_count + number) %
-					    self -> production_count];
-    return - (number / self -> production_count);
-#else
-    *production_return = self -> productions[number % self -> production_count];
-    return number / self -> production_count;
-#endif
+    int count = self -> production_count;
+    *production_return = self -> productions[count + number % count - 1];
+    return - (number / count);
 }
