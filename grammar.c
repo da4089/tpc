@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.22 2000/06/06 00:17:35 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.23 2000/07/27 06:01:26 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -1239,7 +1239,7 @@ static void print_kernel_SR_entry(
 		    {
 			fprintf(stderr, "*** Warning: reduce/reduce conflict on ");
 			component_print(self -> terminals[i], stderr);
-			fprintf(stderr, "in kernel %d\n", index);
+			fprintf(stderr, "in kernel %d\n", kernel_index);
 			fprintf(stderr, "  [using first listed reduction]\n");
 			print_kernel(self, index, stderr);
 		    }
