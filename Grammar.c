@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.15 1999/02/12 07:17:32 phelps Exp $ */
+/* $Id: Grammar.c,v 1.16 1999/02/12 07:44:28 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -311,10 +311,10 @@ void Grammar_free(Grammar self)
 
     for (index = 0; index < self -> production_count; index++)
     {
-	Production_free(self -> productions[index]);
+/*	Production_free(self -> productions[index]);*/
     }
 
-    free(self);
+/*    free(self);*/
 }
 
 /* Pretty-prints the receiver */
@@ -434,7 +434,7 @@ Kernel Grammar_resolveKernel(Grammar self, Kernel kernel)
     {
 	if (Kernel_equals(kernel, self -> kernels[index]))
 	{
-	    free(kernel);
+	    Kernel_free(kernel);
 	    return self -> kernels[index];
 	}
     }
@@ -491,91 +491,6 @@ Kernel Grammar_getKernel(Grammar self, int index)
 List Grammar_getDerivedProductions(Grammar self, Nonterminal nonterminal)
 {
     return self -> productionsByNonterminal[Nonterminal_getIndex(nonterminal)];
-}
-
-
-
-/* Updates the follows table to indicate that component may
- * be followed by the follows Component.  If follows is NULL, then the 
- * follows information is copied from the source table */
-void Grammar_computeClosure(
-    Grammar self,
-    Component component,
-    Component follows,
-    char *source,
-    char *table)
-{
-    Nonterminal nonterminal;
-    char *begin;
-    char *end;
-    List list;
-    int index;
-
-    /* If component isn't a non-terminal then we don't have to do anything */
-    if ((component == NULL) || (! Component_isNonterminal(component)))
-    {
-	return;
-    }
-
-    nonterminal = (Nonterminal)component;
-
-    /* If we have a follows component, then get its follows information */
-    if (follows != NULL)
-    {
-	int length = sizeof(char) * (self -> terminal_count + 1);
-	begin = (char *)alloca(length);
-	memset(begin, 0, length);
-
-	Component_markFirst(follows, self, begin);
-    }
-    /* Otherwise copy from elsewhere in the table */
-    else
-    {
-	begin = source;
-    }
-
-    end = begin + self -> terminal_count + 1;
-
-    /* Go through each of the productions corresponding to the
-     * component and update its follows set */
-    list = self -> productionsByNonterminal[Nonterminal_getIndex(nonterminal)];
-    for (index = 0; index < List_size(list); index++)
-    {
-	char *in;
-	char *out;
-	char *dest;
-
-	int isDone = 1;
-	Production production = (Production) List_get(list, index);
-	dest = table + Production_getIndex(production) * (self -> terminal_count + 1);
-	out = dest;
-
-	/* Copy the elements and notice if we've set a new one */
-	for (in = begin; in < end; in++)
-	{
-	    if ((*in != 0) && (*out == 0))
-	    {
-		*out = *in;
-		isDone = 0;
-	    }
-
-	    out++;
-	}
-
-	/* If we haven't changed anything, then our work here is done */
-	if (isDone)
-	{
-	    return;
-	}
-
-	/* If we've changed anything, then recurse for the current production */
-	Grammar_computeClosure(
-	    self, 
-	    Production_getFirstComponent(production),
-	    Production_getComponent(production, 1),
-	    dest,
-	    table);
-    }
 }
 
 /* Marks the first terminals of a given non-terminal in the table */
