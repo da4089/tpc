@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.2 1999/12/11 16:59:18 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.3 1999/12/11 18:00:13 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -77,6 +77,12 @@ void component_free(component_t self)
 void component_print(component_t self, FILE *out)
 {
     self -> print(self, out);
+}
+
+/* Returns the receiver's name */
+char *component_get_name(component_t self)
+{
+    return self -> name;
 }
 
 /* Returns the receiver's index */
