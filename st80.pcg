@@ -1,0 +1,114 @@
+<START> ::= <method> .
+
+<method> ::= <mpatt> <temps> <statements> .
+<method> ::= <mpatt> <temps> .
+<method> ::= <mpatt> <statements> .
+<method> ::= <mpatt> .
+
+<mpatt> ::= <usel> .
+<mpatt> ::= <bsel> <vname> .
+<mpatt> ::= <kpatt> .
+
+<temps> ::= vbar <tlist> vbar .
+<temps> ::= vbar vbar .
+
+<statements> ::= <slist> stop <rexp> .
+<statements> ::= <slist> stop .
+<statements> ::= <slist> .
+<statements> ::= <rexp> .
+
+<usel> ::= id .
+
+<bsel> ::= binop .
+<bsel> ::= vbar .
+
+<vname> ::= id .
+
+<kpatt> ::= <kpatt> keyword <vname> .
+<kpatt> ::= keyword <vname> .
+
+<tlist> ::= <tlist> <vname> .
+<tlist> ::= <vname> .
+
+<slist> ::= <slist> stop <exp> .
+<slist> ::= <exp> .
+
+<rexp> ::= caret <exp> stop .
+<rexp> ::= caret <exp> .
+
+<exp> ::= <vname> assign <exp> .
+<exp> ::= <primary> .
+<exp> ::= <mexp> .
+<exp> ::= <cexp> .
+
+<primary> ::= <vname> .
+<primary> ::= <literal> .
+<primary> ::= <block> .
+<primary> ::= lparen <exp> rparen .
+
+<mexp> ::= <uexp> .
+<mexp> ::= <bexp> .
+<mexp> ::= <kexp> .
+
+<cexp> ::= <mexp> <cascade> .
+
+<literal> ::= num .
+<literal> ::= char .
+<literal> ::= string .
+<literal> ::= hid .
+<literal> ::= hbinop .
+<literal> ::= hkeywords .
+<literal> ::= <aconst> .
+
+<block> ::= lbracket <bbody> rbracket .
+<block> ::= lbracket rbracket .
+
+<uexp> ::= <udesc> <usel> .
+
+<bexp> ::= <bdesc> <bsel> <udesc> .
+
+<kexp> ::= <bdesc> <klist> .
+
+<cascade> ::= <cascade> semi <usel> .
+<cascade> ::= <cascade> semi <bsel> <udesc> .
+<cascade> ::= <cascade> semi <klist> .
+<cascade> ::= semi <usel> .
+<cascade> ::= semi <bsel> <udesc> .
+<cascade> ::= semi <klist> .
+
+<aconst> ::= hlparen <abody> rparen .
+<aconst> ::= hlparen rparen .
+
+<udesc> ::= <primary> .
+<udesc> ::= <uexp> .
+
+<bdesc> ::= <udesc> .
+<bdesc> ::= <bexp> .
+
+<klist> ::= <klist> keyword <bdesc> .
+<klist> ::= keyword <bdesc> .
+
+<abody> ::= <abody> <symbol> .
+<abody> ::= <abody> <literal> .
+<abody> ::= <abody> <array> .
+<abody> ::= <symbol> .
+<abody> ::= <literal> .
+<abody> ::= <array> .
+
+<symbol> ::= id .
+<symbol> ::= bsel .
+<symbol> ::= keywords .
+
+<array> ::= lparen <abody> rparen .
+<array> ::= lparen rparen .
+
+<bbody> ::= <alist> vbar <temps> <statements> .
+<bbody> ::= <alist> vbar <temps> .
+<bbody> ::= <alist> vbar <statements> .
+<bbody> ::= <alist> vbar .
+<bbody> ::= <temps> <statements> .
+<bbody> ::= <temps> .
+<bbody> ::= <statements> .
+
+<alist> ::= <alist> arg .
+<alist> ::= arg .
