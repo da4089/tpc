@@ -28,17 +28,17 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.4 1999/12/11 17:36:33 phelps Exp $";
+static const char cvsid[] = "$Id: parser.c,v 1.5 1999/12/11 18:02:14 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include "parser.h"
 #include "component.h"
 #include "production.h"
 #include "grammar.h"
+#include "parser.h"
 
 typedef void *(*reduce_function_t )(parser_t self);
 
@@ -100,6 +100,18 @@ struct parser
 
     /* The next character in the token buffer */
     char *point;
+
+    /* The number of different terminal symbols */
+    int terminal_count;
+
+    /* The terminal symbols */
+    component_t *terminals;
+
+    /* The number of different nonterminal symbols */
+    int nonterminal_count;
+
+    /* The nonterminal symbols */
+    component_t *nonterminals;
 };
 
 
@@ -189,13 +201,13 @@ static int top(parser_t self)
 static int shift_reduce(parser_t self, terminal_t type, void *value)
 {
     int action;
+    void *result;
 
     /* Reduce as many times as possible */
     while (IS_REDUCE(action = sr_table[top(self)][type]))
     {
 	struct production *production;
 	int reduction;
-	void *result;
 
 	/* Locate the production we're going to use to do the reduction */
 	reduction = REDUCTION(action);
@@ -231,15 +243,21 @@ static int shift_reduce(parser_t self, terminal_t type, void *value)
 	/* Set up the stack */
 	pop(self, 1);
 
-	accept_grammar(self);
+	/* Finish parsing */
+	result = accept_grammar(self);
+	if (self -> callback != NULL)
+	{
+	    self -> callback(self -> rock, result);
+	}
+
 	return 0;
-/*	return self -> result = accept_grammar(self) != NULL;*/
     }
 
     /* Watch for errors */
     if (IS_ERROR(action))
     {
-	fprintf(stderr, "parse error on line %d [state=%d, type=%d]\n", self -> line, top(self), type);
+	fprintf(stderr, "parse error on line %d: [state=%d, type=%d]\n",
+		self -> line, top(self), type);
 /*    clean_stack(self);*/
     }
     return 0;
@@ -560,24 +578,75 @@ static int lex_error(parser_t self, int ch)
 
 
 /* Returns the nonterminal_t with the given name, creating it if necessary */
-static component_t intern_nonterminal(parser_t self, char *name)
+static component_t intern_terminal(parser_t self, char *name)
 {
-    /* FIX THIS: need a hash table to ensure uniqueness */
-    return nonterminal_alloc(name, 19);
+    component_t component;
+    int index;
+
+    /* See if we've already encountered this terminal symbol */
+    for (index = 0; index < self -> terminal_count; index++)
+    {
+	component = self -> terminals[index];
+	if (strcmp(name, component_get_name(component)) == 0)
+	{
+	    return component;
+	}
+    }
+
+    /* Not there so create one */
+    component = terminal_alloc(name, self -> terminal_count);
+
+    /* Make space in the table for it */
+    self -> terminals = (component_t *)realloc(
+	self -> terminals, (self -> terminal_count + 1) * sizeof(component_t));
+    self -> terminals[self -> terminal_count++] = component;
+
+    return component;
 }
 
 /* Returns the nonterminal_t with the given name, creating it if necessary */
-static component_t intern_terminal(parser_t self, char *name)
+static component_t intern_nonterminal(parser_t self, char *name)
 {
-    /* FIX THIS: need a hash table to ensure uniqueness */
-    return terminal_alloc(name, 19);
+    component_t component;
+    int index;
+
+    /* See if we've already encountered this terminal symbol */
+    for (index = 0; index < self -> nonterminal_count; index++)
+    {
+	component = self -> nonterminals[index];
+	if (strcmp(name, component_get_name(component)) == 0)
+	{
+	    return component;
+	}
+    }
+
+    /* Not there so create one */
+    component = nonterminal_alloc(name, self -> nonterminal_count);
+
+    /* Make space for it in the table */
+    self -> nonterminals = (component_t *)realloc(
+	self -> nonterminals, (self -> terminal_count + 1) * sizeof(component_t));
+    self -> nonterminals[self -> nonterminal_count++] = component;
+
+    return component;
 }
+
 
 /* grammar ::= production-list */
 static void *accept_grammar(parser_t self)
 {
-    printf("accept_grammar()\n");
-    exit(1);
+    grammar_t grammar = (grammar_t)self -> value_top[0];
+
+    /* Finalize construction of the grammar */
+    grammar_set_terminals(grammar, self -> terminal_count, self -> terminals);
+    self -> terminal_count = 0;
+    self -> terminals = NULL;
+
+    grammar_set_nonterminals(grammar, self -> nonterminal_count, self -> nonterminals);
+    self -> nonterminal_count = 0;
+    self -> nonterminals = NULL;
+
+    return grammar;
 }
 
 /* production-list ::= production-list production */
@@ -735,12 +804,22 @@ parser_t parser_alloc(parser_callback_t callback, void *rock)
 
     /* Set up the token pointers */
     self -> token_end = self -> token + INITIAL_BUFFER_SIZE;
+
+    /* Create a dummy terminal for EOF */
+    if (intern_terminal(self, "<EOF>") == NULL)
+    {
+	parser_free(self);
+	return NULL;
+    }
+
     return self;
 }
 
 /* Releases the resources consumed by the receiver */
 void parser_free(parser_t self)
 {
+    int index;
+
     if (self -> state_stack != NULL)
     {
 	free(self -> state_stack);
@@ -754,6 +833,26 @@ void parser_free(parser_t self)
     if (self -> token != NULL)
     {
 	free(self -> token);
+    }
+
+    if (self -> terminals != NULL)
+    {
+	for (index = 0; index < self -> terminal_count; index++)
+	{
+	    component_free(self -> terminals[index]);
+	}
+
+	free(self -> terminals);
+    }
+
+    if (self -> nonterminals != NULL)
+    {
+	for (index = 0; index < self -> nonterminal_count; index++)
+	{
+	    component_free(self -> nonterminals[index]);
+	}
+
+	free(self -> nonterminals);
     }
 
     free(self);
