@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.14 1999/12/20 09:24:52 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.15 1999/12/20 15:04:54 phelps Exp $";
 #endif /* lint */
 
 #include <stdio.h>
@@ -1092,54 +1092,276 @@ void grammar_print_kernels(grammar_t self, FILE *out)
     }
 }
 
-/* Pretty-prints the receiver */
-void grammar_print(grammar_t self, FILE *out)
+
+/* Print out some macros that simplify table access */
+static void print_macros(grammar_t self, FILE *out)
 {
-#if 0
+    fprintf(out,
+	"#define IS_ERROR(action) ((action) == 0)\n"
+	"#define IS_ACCEPT(action) ((action) == %d)\n"
+	"#define IS_REDUCE(action) (0 < (action) && (action) < %d)\n"
+	"#define IS_SHIFT(action) (%d <= (action) && (action) < %d)\n"
+	"#define REDUCTION(action) (action)\n"
+	"#define REDUCE_GOTO(state, production) \\\n"
+	"    (goto_table[state][production -> nonterm_type])\n"
+	"#define SHIFT_GOTO(action) ((action) - %d)\n\n",
+	self -> production_count + self -> kernel_count,
+	self -> production_count,
+	self -> production_count, self -> production_count + self -> kernel_count,
+	self -> production_count);
+}
+
+/* Prints an enumeration which lists the various terminals */
+static void print_terminal_enum(grammar_t self, FILE *out)
+{
     int index;
-    char **row;
 
-    /* Print out the productions by nonterminal table */
-    for (index = 0; index < self -> nonterminal_count; index++)
+    /* Print the enum header */
+    fprintf(out, "typedef enum\n{\n");
+
+    /* Print each terminal */
+    for (index = 0; index < self -> terminal_count; index++)
     {
-	production_t *probe;
+	component_print_enum(self -> terminals[index], out);
+    }
 
-	fprintf(out, "\n[%d]:\n", index);
-	if ((probe = self -> productions_by_nonterminal[index]) != NULL)
+    fprintf(out, "\n} terminal_t;\n\n");
+}
+
+/* Prints out the reduction table */
+static void print_reduction_table(grammar_t self, FILE *out)
+{
+    int index;
+
+    /* Define the structure type */
+    fprintf(out,
+	"struct production\n{\n"
+	"    void *(*function)();\n"
+	"    int nonterm_type;\n"
+	"    int count;\n};\n\n");
+
+    /* Print the table header */
+    fprintf(out, "static struct production productions[%d] =\n{\n",
+	    self -> production_count);
+
+    /* Print the production functions */
+    for (index = 0; index < self -> production_count; index++)
+    {
+	production_t production = self -> productions[index];
+
+	/* Put some space between the entries */
+	if (index != 0)
 	{
-	    while (*probe != NULL)
+	    fprintf(out, ",\n\n");
+	}
+
+	/* Print out a comment containing the production */
+	fprintf(out, "    /* %d: ", index);
+	production_print(production, out);
+	fprintf(out, "*/\n");
+
+	/* Print the production's struct */
+	production_print_struct(production, out);
+    }
+
+    /* Print the table footer */
+    fprintf(out, "\n};\n\n");
+}
+
+/* Prints out the contribution of a kernel to the SR table */
+static void print_kernel_SR_entry(grammar_t self, kernel_t kernel, FILE *out)
+{
+    int *reductions;
+    int index;
+
+    /* Create a table in which to record the reductions */
+    reductions = (int *)malloc(self -> terminal_count * sizeof(int));
+    memset(reductions, -1, self -> terminal_count * sizeof(int));
+
+    /* Populate the reductions table */
+    for (index = 0; index < kernel -> count; index++)
+    {
+	int pi;
+	int offset = decode(self, kernel -> pairs[index], &pi);
+	production_t production = self -> productions[pi];
+
+	/* We reduce on the follow set if we're the end of the production */
+	if (production_get_component(production, offset) == NULL)
+	{
+	    int i;
+
+	    /* Traverse the follows set */
+	    for (i = 0; i < self -> terminal_count; i++)
 	    {
-		fprintf(out, "  ");
-		production_print(*(probe++), out);
-		fprintf(out, "\n");
+		if (kernel -> follows_table[index][i])
+		{
+		    /* Report reduce/reduce conflicts */
+		    if (reductions[i] != -1)
+		    {
+			fprintf(stderr, "*** Warning: reduce/reduce conflict on ");
+			component_print(self -> terminals[i], stderr);
+			fprintf(stderr, "in kernel %d\n", index);
+			fprintf(stderr, "  [using first listed reduction]\n");
+			/*print_kernel(self, index);*/
+			abort();
+		    }
+		    else
+		    {
+			reductions[i] = pi;
+		    }
+		}
 	    }
 	}
     }
-#endif /* 0 */
-#if 0
-    /* Print out the generates table */
-    fprintf(out, "\n\ngenerates: (%p)\n", self -> generates);
-    for (row = self -> generates; row < self -> generates + self -> nonterminal_count; row++)
-    {
-	int j;
 
-	fprintf(out, "  ");
-	for (j = 0; j < self -> nonterminal_count; j++)
+    /* Print out the table entry */
+    fprintf(out, "    { ");
+
+    /* Print the terminal transitions */
+    for (index = 0; index < self -> terminal_count; index++)
+    {
+	int ki = kernel -> goto_table[self -> nonterminal_count + index];
+	int shift = (ki < 0) ? 0 : ki;
+	int reduction = reductions[index];
+
+	/* Print a comma separator */
+	if (index != 0)
 	{
-	    if (*row == NULL)
+	    fprintf(out, ", ");
+	}
+
+	/* See if there's a shift action for this terminal */
+	if (shift != 0)
+	{
+	    /* Report shift/reduce conflicts */
+	    if (reduction != -1)
 	    {
-		fprintf(out, "- ");
-	    }
-	    else if ((*row)[j] == 0)
-	    {
-		fprintf(out, "- ");
+		fprintf(stderr, "*** Warning: shift/reduce conflict on ");
+		component_print(self -> terminals[index], stderr);
+		fprintf(stderr, "in kernel %d\n", ki);
+
+		/* Resolve the conflict according to the order of the
+		 * productions in the grammar */
+		abort();
 	    }
 	    else
 	    {
-		fprintf(out, "X ");
+		/* Print out a shift */
+		fprintf(out, "S(%d)", shift);
 	    }
 	}
-	fprintf(out, "\n");
+	else if (reduction == 0)
+	{
+	    /* Accept */
+	    fprintf(out, "ACC");
+	}
+	else if (reduction > 0)
+	{
+	    /* Normal reduction */
+	    fprintf(out, "R(%d)", reduction);
+	}
+	else
+	{
+	    /* Error */
+	    fprintf(out, "ERR");
+	}
     }
-#endif /* 0 */
+
+    /* Close this table entry */
+    fprintf(out, " }");
+
+    /* Clean up */
+    free(reductions);
+}
+
+/* Prints out the shift/reduce table */
+static void print_shift_reduce_table(grammar_t self, FILE *out)
+{
+    int max = self -> production_count + self -> kernel_count;
+    int index;
+
+    /* Print out some helpful macros */
+    fprintf(out,
+	"#define ERR 0\n"
+	"#define ACC %d\n"
+	"#define R(x) (x)\n"
+	"#define S(x) (x + %d)\n\n",
+	max, self -> production_count);
+
+    /* Print the SR table header */
+    fprintf(out, "static unsigned int sr_table[%d][%d] =\n{\n",
+	    self -> kernel_count,
+	    self -> terminal_count);
+
+    /* Go through each kernel and print out its part of the SR table */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	if (index != 0)
+	{
+	    printf(",\n");
+	}
+
+	print_kernel_SR_entry(self, self -> kernels[index], out);
+    }
+
+    /* Close off the SR table and undefine our macros */
+    fprintf(out,
+	"\n};\n\n"
+	"#undef ERR\n"
+	"#undef R\n"
+	"#undef S\n\n");
+}
+
+/* Prints out the goto table */
+static void print_goto_table(grammar_t self, FILE *out)
+{
+    int index;
+
+    /* Print the goto table header */
+    fprintf(out, "static unsigned int goto_table[%d][%d] =\n{\n",
+	    self -> kernel_count,
+	    self -> nonterminal_count);
+
+    /* Go through each kernel and print its portion of the goto table */
+    for (index = 0; index < self -> kernel_count; index++)
+    {
+	kernel_t kernel = self -> kernels[index];
+	int i;
+
+	if (index != 0)
+	{
+	    fprintf(out, ",\n");
+	}
+
+	fprintf(out, "    { ");
+
+	/* Go through each nonterminal and look up its goto information */
+	for (i = 0; i < self -> nonterminal_count; i++)
+	{
+	    int ki = kernel -> goto_table[i];
+	    if (i == 0)
+	    {
+		fprintf(out, "%d", (ki < 0) ? 0 : ki);
+	    }
+	    else
+	    {
+		fprintf(out, ", %d", (ki < 0) ? 0 : ki);
+	    }
+	}
+
+	fprintf(out, " }");
+    }
+
+    /* Close off the goto table */
+    fprintf(out, "\n};\n\n");
+}
+
+/* Print out a parse table */
+void grammar_print_table(grammar_t self, FILE *out)
+{
+    print_macros(self, out);
+    print_terminal_enum(self, out);
+    print_reduction_table(self, out);
+    print_shift_reduce_table(self, out);
+    print_goto_table(self, out);
 }
