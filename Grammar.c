@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.22 1999/02/16 08:39:19 phelps Exp $ */
+/* $Id: Grammar.c,v 1.23 1999/02/16 09:01:39 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -298,8 +298,9 @@ static void PrintMacros(Grammar self, FILE *out)
     fprintf(out, "#define IS_REDUCE(action) ((action) < %d)\n", self -> production_count);
     fprintf(out, "#define IS_SHIFT(action) (! IS_REDUCE(action))\n");
     fprintf(out, "#define REDUCTION(action) (action)\n");
-    fprintf(out, "#define REDUCE_GOTO(state, action) (goto_table[state][production_type[REDUCTION(action)]])\n");
-    fprintf(out, "#define SHIFT_GOTO(action) ((action) - %d)\n", self -> production_count);
+    fprintf(out, "#define REDUCE_GOTO(state, action) \\\n");
+    fprintf(out, "    (goto_table[state][production_type[REDUCTION(action)]])\n");
+    fprintf(out, "#define SHIFT_GOTO(action) ((action) - %d)\n\n", self -> production_count);
 }
 
 /* Prints an enumeration which lists the various terminal types */
