@@ -28,9 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.17 1999/12/20 15:37:18 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.18 1999/12/20 15:52:05 phelps Exp $";
 #endif /* lint */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -106,6 +107,7 @@ static kernel_t kernel_alloc(int count, int *pairs, int terminal_count)
     return self;
 }
 
+#if 0
 /* Releases the resources consumed by the receiver */
 static void kernel_free(kernel_t self)
 {
@@ -121,6 +123,7 @@ static void kernel_free(kernel_t self)
 
     free(self);
 }
+#endif /* 0 */
 
 /* Returns nonzero if the kernel matches the set of encoded
  * (production, offset) pairs */

@@ -28,9 +28,10 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.7 1999/12/20 15:03:53 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.8 1999/12/20 15:52:05 phelps Exp $";
 #endif /* lint */
 
+#include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "component.h"
