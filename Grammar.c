@@ -1,4 +1,4 @@
-/* $Id: Grammar.c,v 1.25 1999/02/16 12:34:33 phelps Exp $ */
+/* $Id: Grammar.c,v 1.26 1999/02/16 12:37:49 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -360,26 +360,6 @@ static void PrintReductionTable(Grammar self, FILE *out)
     fprintf(out, "\n};\n\n");
 }
 
-/* Prints the production_type table */
-static void PrintProductionTypeTable(Grammar self, FILE *out)
-{
-    int index;
-
-    /* Print the table header */
-    fprintf(out, "static int production_type[%d] =\n{\n", self -> production_count);
-
-    /* Print the type of the production's nonterminal and the production in a comment */
-    for (index = 0; index < self -> production_count; index++)
-    {
-	Production production = self -> productions[index];
-	fprintf(out, "    %d, /* ", Production_getNonterminalIndex(production));
-	Production_print(production, out);
-	fputs("*/\n", out);
-    }
-
-    /* Close the table */
-    fputs("};\n\n", out);
-}
 
 /* Prints out the Shift/Reduce table */
 static void PrintShiftReduceTable(Grammar self, FILE *out)
