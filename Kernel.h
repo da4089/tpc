@@ -1,4 +1,4 @@
-/* $Id: Kernel.h,v 1.7 1999/02/12 05:40:03 phelps Exp $
+/* $Id: Kernel.h,v 1.8 1999/02/15 08:04:08 phelps Exp $
  *
  * A Kernel represents the Productions of a parser state which can't
  * be derived from the other productions in the kernel
@@ -45,5 +45,11 @@ void Kernel_propagateFollows(Kernel self, int *isDone);
  * it wasn't already there */
 int Kernel_addFollowsTerminal(Kernel self, int pair, Terminal terminal);
 
+
+/* Print the receiver's portion of the parse table */
+void Kernel_printSRTableEntry(Kernel self, FILE *out);
+
+/* Print the receiver's portion of the parse table */
+void Kernel_printGotoTableEntry(Kernel self, FILE *out);
 
 #endif /* KERNEL_H */

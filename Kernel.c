@@ -1,4 +1,4 @@
-/* $Id: Kernel.c,v 1.14 1999/02/12 12:19:05 phelps Exp $ */
+/* $Id: Kernel.c,v 1.15 1999/02/15 08:03:57 phelps Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -612,3 +612,129 @@ int Kernel_addFollowsTerminal(Kernel self, int pair, Terminal terminal)
     fprintf(stderr, "*** BADNESS\n");
     exit(1);
 }
+
+/* Print the receiver's portion of the parse table */
+void Kernel_printSRTableEntry(Kernel self, FILE *out)
+{
+    int nonterminal_count = Grammar_nonterminalCount(self -> grammar);
+    int terminal_count = Grammar_terminalCount(self -> grammar);
+    int *reductions;
+    int index;
+
+    /* Create a table in which to record the reductions */
+    reductions = (int *)alloca(terminal_count * sizeof(int));
+    memset(reductions, 0, terminal_count * sizeof(int));
+
+    /* Populate the reductions table */
+    for (index = 0; index < self -> count; index++)
+    {
+	Production production;
+	int offset = Grammar_decode(self -> grammar, self -> pairs[index], &production);
+
+	/* We reduce on the follow set if we're the end of the production */
+	if (offset == Production_getCount(production))
+	{
+	    char *in = self -> follows + (index * terminal_count);
+	    char *end = in + terminal_count;
+	    int *out = reductions;
+	    int production_index = Production_getIndex(production);
+
+	    /* Indicate that we reduce on the production for inputs in its follows set */
+	    while (in < end)
+	    {
+		/* Only worry about terminals in the follows set */
+		if (*in != 0)
+		{
+		    /* Watch for reduce/reduce conflicts and default
+		     * to the first one encountered */
+		    if (*out != 0)
+		    {
+			fprintf(stderr,
+				"*** Uh oh -- reduce/reduce conflict in kernel %d\n",
+				self -> index);
+		    }
+		    else
+		    {
+			*out = production_index;
+		    }
+		}
+
+		in++;
+		out++;
+	    }
+	}
+    }
+
+    fputs("    { ", out);
+
+    /* Print the terminal transitions */
+    for (index = 0; index < terminal_count; index++)
+    {
+	Kernel kernel = self -> goto_table[nonterminal_count + index];
+	int shift = (kernel == NULL) ? 0 : Kernel_getIndex(kernel);
+	int reduction = reductions[index];
+
+	/* See if there's a shift action for this terminal */
+	if (shift != 0)
+	{
+	    /* Watch for shift/reduce conflicts and default to shift */
+	    if (reduction != 0)
+	    {
+		fprintf(stderr, "*** shift/reduce conflict in kernel %d\n", self -> index);
+	    }
+
+	    /* Print out a shift */
+	    if (index == 0)
+	    {
+		fprintf(out, "S(%d)", shift);
+	    }
+	    else
+	    {
+		fprintf(out, ", S(%d)", shift);
+	    }
+	}
+
+	/* Otherwise see if there's a reduce action for this terminal */
+	else if (reduction != 0)
+	{
+	    /* Print out a reduce */
+	    if (index == 0)
+	    {
+		fprintf(out, "R(%d)", reduction);
+	    }
+	    else
+	    {
+		fprintf(out, ", R(%d)", reduction);
+	    }
+	}
+    }
+
+    fputs(" },\n", out);
+}
+
+/* Print the receiver's portion of the parse table */
+void Kernel_printGotoTableEntry(Kernel self, FILE *out)
+{
+    int index;
+
+    fputs("    { ", out);
+
+    /* Go through each nonterminal and look up its goto information */
+    for (index = 0; index < Grammar_nonterminalCount(self -> grammar); index++)
+    {
+	Kernel kernel = self -> goto_table[index];
+	int target = (kernel == NULL) ? 0 : Kernel_getIndex(kernel);
+
+	if (index == 0)
+	{
+	    fprintf(out, "%d", target);
+	}
+	else
+	{
+	    fprintf(out, ", %d", target);
+	}
+    }
+
+    fputs(" },\n", out);
+}
+
