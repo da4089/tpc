@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.27 2006/06/27 13:59:59 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.28 2006/06/27 15:34:11 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -136,7 +136,7 @@ static int kernel_matches(kernel_t self, int count, int *pairs)
     }
 
     /* Compare the arrays */
-    return memcmp(self -> pairs, pairs, count * sizeof(int *)) == 0;
+    return memcmp(self -> pairs, pairs, count * sizeof(int)) == 0;
 }
 
 /* Adds the terminal to the follows set for the given kernel item */
