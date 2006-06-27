@@ -28,7 +28,7 @@
 ****************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.26 2002/04/11 21:41:09 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.27 2006/06/27 13:59:59 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -549,10 +549,8 @@ int compute_LR0_kernels(grammar_t self)
     /* Do the goto table thing for each kernel */
     for (i = 0; i < self -> kernel_count; i++)
     {
-	kernel_t kernel = self -> kernels[i];
-
 	/* Compute the pairs from the kernel */
-	compute_pairs(self, kernel, pairs_counts, pairs_table);
+        compute_pairs(self, self -> kernels[i], pairs_counts, pairs_table);
 
 	/* Allocate room for the resulting goto table */
 	goto_table = (int *)calloc(count, sizeof(int));
@@ -566,7 +564,7 @@ int compute_LR0_kernels(grammar_t self)
 	}
 
 	/* Set the kernel's goto table */
-	kernel -> goto_table = goto_table;
+	self -> kernels[i] -> goto_table = goto_table;
     }
 
     /* Clean up */
