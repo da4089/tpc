@@ -3,6 +3,8 @@ Overview of changes in tpc-0.6.2
 * Fixed a bug which could cause many superfluous kernels on 64-bit
   platforms.
 
+* Now released under a BSD license.
+
 Overview of changes in tpc-0.6.1
 
 * Reporting the correct kernel on reduce/reduce conflicts.
