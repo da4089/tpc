@@ -43,7 +43,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include <fcntl.h>
 #include "component.h"
 #include "production.h"
@@ -164,7 +166,7 @@ int main(int argc, char *argv[])
 
         case 'q':
             /* --quiet or -q */
-            close(STDERR_FILENO);
+            fclose(stderr);
             break;
 
         case 'v':
@@ -208,13 +210,13 @@ int main(int argc, char *argv[])
             exit(1);
         }
     } else {
-        fd = STDIN_FILENO;
+        fd = fileno(stdin);
     }
 
     /* Read characters from stdin and give them to the Lexer */
     while (1) {
         unsigned char buffer[BUFFER_SIZE];
-        ssize_t length;
+        int length;
 
         if ((length = read(fd, buffer, BUFFER_SIZE)) < 0) {
             perror("read(): failed");
