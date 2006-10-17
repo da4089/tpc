@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1999-2006 by Mantara Software (ABN 17 105 665 594).
@@ -37,7 +38,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.12 2006/06/29 10:22:00 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.13 2006/10/17 14:28:28 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -77,9 +78,8 @@ static component_t component_alloc(
     int length = strlen(name);
 
     /* Allocate memory for the component_t */
-    if ((self = (component_t)malloc(sizeof(struct component) + length)) == NULL)
-    {
-	return NULL;
+    if ((self = (component_t)malloc(sizeof(struct component) + length)) == NULL) {
+        return NULL;
     }
 
     /* Initialize its contents to sane values */
@@ -91,13 +91,11 @@ static component_t component_alloc(
     memcpy(self -> name, name, length + 1);
 
     /* Copy the filename */
-    if (filename != NULL)
-    {
-	if ((self -> filename = strdup(filename)) == NULL)
-	{
-	    free(self);
-	    return NULL;
-	}
+    if (filename != NULL) {
+        if ((self -> filename = strdup(filename)) == NULL) {
+            free(self);
+            return NULL;
+        }
     }
 
     return self;
@@ -125,26 +123,20 @@ void component_print(component_t self, FILE *out)
 /* Prints the receiver as a C enum entry */
 void component_print_c_enum(component_t self, FILE *out)
 {
-    if (self -> index == 0)
-    {
-	fprintf(out, "    TT_EOF = 0");
-    }
-    else
-    {
-	fprintf(out, ",\n    TT_%s", self -> name);
+    if (self -> index == 0) {
+        fprintf(out, "    TT_EOF = 0");
+    } else {
+        fprintf(out, ",\n    TT_%s", self -> name);
     }
 }
 
 /* Prints the receiver as a python assignment statement */
 void component_print_python_assign(component_t self, FILE *out)
 {
-    if (self -> index == 0)
-    {
-	fprintf(out, "TT_EOF = 0\n");
-    }
-    else
-    {
-	fprintf(out, "TT_%s = %d\n", self -> name, self -> index);
+    if (self -> index == 0) {
+        fprintf(out, "TT_EOF = 0\n");
+    } else {
+        fprintf(out, "TT_%s = %d\n", self -> name, self -> index);
     }
 }
 
@@ -182,9 +174,8 @@ component_t nonterminal_alloc(char *filename, int line, char *name, int index)
     component_t self;
 
     /* Do some basic initialization */
-    if ((self = component_alloc(filename, line, name, index)) == NULL)
-    {
-	return NULL;
+    if ((self = component_alloc(filename, line, name, index)) == NULL) {
+        return NULL;
     }
 
     /* Initialize the functions */
@@ -198,9 +189,8 @@ component_t terminal_alloc(char *filename, int line, char *name, int index)
     component_t self;
 
     /* Do some basic initialization */
-    if ((self = component_alloc(filename, line, name, index)) == NULL)
-    {
-	return NULL;
+    if ((self = component_alloc(filename, line, name, index)) == NULL) {
+        return NULL;
     }
 
     /* Initialize the functions */
