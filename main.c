@@ -94,20 +94,20 @@ static void parser_cb(void *ignored, grammar_t grammar)
 
     /* Print the kernels if debug is on */
     if (debug) {
-	grammar_print_kernels(grammar, stderr);
+        grammar_print_kernels(grammar, stderr);
     }
 
     /* If an output filename was specified then write to it */
     if (output_filename != NULL) {
-	/* Try to open the output file */
-	if ((file = fopen(output_filename, "w")) == NULL) {
-	    perror("unable to open file for write");
-	    exit(1);
-	}
+        /* Try to open the output file */
+        if ((file = fopen(output_filename, "w")) == NULL) {
+            perror("unable to open file for write");
+            exit(1);
+        }
 
-	print_tables(grammar, file);
-	fclose(file);
-	return;
+        print_tables(grammar, file);
+        fclose(file);
+        return;
     }
 
     /* Otherwise just print it to stdout */
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     /* Read options from the command line */
     while ((choice = getopt_long(argc, argv, "o:cp?dqvh",
                                  long_options, NULL)) != -1) {
-	switch (choice) {
+        switch (choice) {
         case 'o':
             /* --output or -o */
             output_filename = optarg;
@@ -150,28 +150,28 @@ int main(int argc, char *argv[])
             break;
 
         case 'p':
-	    /* --python or -p */
+            /* --python or -p */
             format = FORMAT_PYTHON;
             module = optarg;
             break;
 
         case 'd':
-	    /* --debug or -d */
+            /* --debug or -d */
             debug = 1;
             break;
 
         case 'q':
-	    /* --quiet or -q */
+            /* --quiet or -q */
             close(STDERR_FILENO);
             break;
 
         case 'v':
-	    /* --version or -v */
+            /* --version or -v */
             printf("%s version %s\n", PACKAGE, VERSION);
             exit(0);
 
         case 'h':
-	    /* --help or -h */
+            /* --help or -h */
             usage(argc, argv);
             exit(0);
 
@@ -179,57 +179,56 @@ int main(int argc, char *argv[])
             /* bogus option */
             usage(argc, argv);
             exit(1);
-	}
+        }
     }
 
     /* Look for an input file name */
     if (optind < argc) {
-	input_filename = argv[optind++];
+        input_filename = argv[optind++];
     }
 
     /* Make sure we don't have any extra args */
     if (optind < argc) {
-	usage(argc, argv);
-	exit(1);
+        usage(argc, argv);
+        exit(1);
     }
     
     /* Create the parser */
     if ((parser = parser_alloc(parser_cb, NULL)) == NULL) {
-	perror("parser_alloc(): failed");
-	exit(1);
+        perror("parser_alloc(): failed");
+        exit(1);
     }
 
     /* Open up the input file */
     if (input_filename != NULL) {
-	if ((fd = open(input_filename, O_RDONLY)) < 0)
-	{
-	    perror("unable to open file for read");
-	    exit(1);
-	}
+        if ((fd = open(input_filename, O_RDONLY)) < 0) {
+            perror("unable to open file for read");
+            exit(1);
+        }
     } else {
-	fd = STDIN_FILENO;
+        fd = STDIN_FILENO;
     }
 
     /* Read characters from stdin and give them to the Lexer */
     while (1) {
-	unsigned char buffer[BUFFER_SIZE];
-	ssize_t length;
+        unsigned char buffer[BUFFER_SIZE];
+        ssize_t length;
 
-	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0) {
-	    perror("read(): failed");
-	    abort();
-	}
+        if ((length = read(fd, buffer, BUFFER_SIZE)) < 0) {
+            perror("read(): failed");
+            abort();
+        }
 
-	/* Parse what we've read so far */
-	if (parser_parse(parser, input_filename, buffer, length) < 0) {
-	    close(fd);
-	    exit(1);
-	}
+        /* Parse what we've read so far */
+        if (parser_parse(parser, input_filename, buffer, length) < 0) {
+            close(fd);
+            exit(1);
+        }
 
-	/* Watch for EOF */
-	if (length == 0) {
-	    close(fd);
-	    exit(0);
-	}
+        /* Watch for EOF */
+        if (length == 0) {
+            close(fd);
+            exit(0);
+        }
     }
 }
