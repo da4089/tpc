@@ -38,7 +38,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: component.c,v 1.13 2006/10/17 14:28:28 phelps Exp $";
+static const char cvsid[] = "$Id: component.c,v 1.14 2006/10/17 15:03:16 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -68,31 +68,29 @@ struct component
 };
 
 /* Allocates and initializes a new component_t */
-static component_t component_alloc(
-    char *filename,
-    int line,
-    char *name,
-    int index)
+static component_t
+component_alloc(char *filename, int line, char *name, int index)
 {
     component_t self;
     int length = strlen(name);
 
     /* Allocate memory for the component_t */
-    if ((self = (component_t)malloc(sizeof(struct component) + length)) == NULL) {
+    self = (component_t)malloc(sizeof(struct component) + length);
+    if (self == NULL) {
         return NULL;
     }
 
     /* Initialize its contents to sane values */
-    self -> filename = NULL;
-    self -> line = line;
-    self -> index = index;
+    self->filename = NULL;
+    self->line = line;
+    self->index = index;
 
     /* Copy the name into place */
-    memcpy(self -> name, name, length + 1);
+    memcpy(self->name, name, length + 1);
 
     /* Copy the filename */
     if (filename != NULL) {
-        if ((self -> filename = strdup(filename)) == NULL) {
+        if ((self->filename = strdup(filename)) == NULL) {
             free(self);
             return NULL;
         }
@@ -102,74 +100,84 @@ static component_t component_alloc(
 }
 
 /* Releases the resources consumed by the receiver */
-void component_free(component_t self)
+void
+component_free(component_t self)
 {
     free(self);
 }
 
 /* Returns the filename and line number of the component's first mention */
-int component_get_origin(component_t self, char **filename_out)
+int
+component_get_origin(component_t self, char **filename_out)
 {
-    *filename_out = self -> filename;
-    return self -> line;
+    *filename_out = self->filename;
+    return self->line;
 }
 
 /* Pretty-prints the receiver */
-void component_print(component_t self, FILE *out)
+void
+component_print(component_t self, FILE *out)
 {
-    self -> print(self, out);
+    self->print(self, out);
 }
 
 /* Prints the receiver as a C enum entry */
-void component_print_c_enum(component_t self, FILE *out)
+void
+component_print_c_enum(component_t self, FILE *out)
 {
-    if (self -> index == 0) {
+    if (self->index == 0) {
         fprintf(out, "    TT_EOF = 0");
     } else {
-        fprintf(out, ",\n    TT_%s", self -> name);
+        fprintf(out, ",\n    TT_%s", self->name);
     }
 }
 
 /* Prints the receiver as a python assignment statement */
-void component_print_python_assign(component_t self, FILE *out)
+void
+component_print_python_assign(component_t self, FILE *out)
 {
-    if (self -> index == 0) {
+    if (self->index == 0) {
         fprintf(out, "TT_EOF = 0\n");
     } else {
-        fprintf(out, "TT_%s = %d\n", self -> name, self -> index);
+        fprintf(out, "TT_%s = %d\n", self->name, self->index);
     }
 }
 
 /* Returns the receiver's name */
-char *component_get_name(component_t self)
+char *
+component_get_name(component_t self)
 {
-    return self -> name;
+    return self->name;
 }
 
 /* Returns the receiver's index */
-int component_get_index(component_t self)
+int
+component_get_index(component_t self)
 {
-    return self -> index;
+    return self->index;
 }
 
 
 
 /* Pretty-print function for a nonterminal */
-static void nonterminal_print(component_t self, FILE *out)
+static void
+nonterminal_print(component_t self, FILE *out)
 {
-    fprintf(out, "<%s> ", self -> name);
+    fprintf(out, "<%s> ", self->name);
 }
 
 /* Pretty-print function for a terminal */
-static void terminal_print(component_t self, FILE *out)
+static void
+terminal_print(component_t self, FILE *out)
 {
-    fprintf(out, "%s ", self -> name);
+    fprintf(out, "%s ", self->name);
 }
 
 
 
 /* Allocates and initializes a new nonterminal component_t */
-component_t nonterminal_alloc(char *filename, int line, char *name, int index)
+component_t
+nonterminal_alloc(char *filename, int line, char *name, int index)
 {
     component_t self;
 
@@ -179,12 +187,13 @@ component_t nonterminal_alloc(char *filename, int line, char *name, int index)
     }
 
     /* Initialize the functions */
-    self -> print = nonterminal_print;
+    self->print = nonterminal_print;
     return self;
 }
 
 /* Allocates and initializes a new terminal component_t */
-component_t terminal_alloc(char *filename, int line, char *name, int index)
+component_t
+terminal_alloc(char *filename, int line, char *name, int index)
 {
     component_t self;
 
@@ -194,12 +203,13 @@ component_t terminal_alloc(char *filename, int line, char *name, int index)
     }
 
     /* Initialize the functions */
-    self -> print = terminal_print;
+    self->print = terminal_print;
     return self;
 }
 
 /* Returns nonzero if the component is a nonterminal */
-int component_is_nonterminal(component_t self)
+int
+component_is_nonterminal(component_t self)
 {
-    return self -> print == nonterminal_print;
+    return self->print == nonterminal_print;
 }

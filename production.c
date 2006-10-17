@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1999-2006 by Mantara Software (ABN 17 105 665 594).
@@ -37,7 +38,7 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: production.c,v 1.12 2006/06/29 10:22:00 phelps Exp $";
+static const char cvsid[] = "$Id: production.c,v 1.13 2006/10/17 15:01:04 phelps Exp $";
 #endif /* lint */
 
 #include <config.h>
@@ -66,124 +67,123 @@ struct production
 };
 
 /* Allocates and initializes a new production_t */
-production_t production_alloc(
-    int index,
-    component_t nonterminal,
-    int component_count,
-    component_t *components,
-    char *reduction)
+production_t
+production_alloc(int index,
+                 component_t nonterminal,
+                 int component_count,
+                 component_t *components,
+                 char *reduction)
 {
     production_t self;
 
     /* Allocate memory for the new production_t */
-    if ((self = (production_t)malloc(sizeof(struct production))) == NULL)
-    {
-	return NULL;
+    if ((self = (production_t)malloc(sizeof(struct production))) == NULL) {
+        return NULL;
     }
 
     /* Initialize its contents to sane values */
-    self -> index = index;
-    self -> nonterminal = nonterminal;
-    self -> count = component_count;
-    self -> components = components;
-    self -> reduction = reduction;
+    self->index = index;
+    self->nonterminal = nonterminal;
+    self->count = component_count;
+    self->components = components;
+    self->reduction = reduction;
     return self;
 }
 
 /* Releases the resources consumed by the receiver */
-void production_free(production_t self)
+void
+production_free(production_t self)
 {
-    if (self -> components != NULL)
-    {
-	free(self -> components);
+    if (self->components != NULL) {
+        free(self->components);
     }
 
     free(self);
 }
 
 /* Returns the production's index */
-int production_get_index(production_t self)
+int
+production_get_index(production_t self)
 {
-    return self -> index;
+    return self->index;
 }
 
 /* Returns the nonterminal index of the production's left-hand side */
-int production_get_nonterminal_index(production_t self)
+int
+production_get_nonterminal_index(production_t self)
 {
-    return component_get_index(self -> nonterminal);
+    return component_get_index(self->nonterminal);
 }
 
 /* Returns the nth component of the production's right-hand-side */
-component_t production_get_component(production_t self, int index)
+component_t
+production_get_component(production_t self, int index)
 {
-    if (index < self -> count)
-    {
-	return self -> components[index];
+    if (index < self->count) {
+        return self->components[index];
     }
 
     return NULL;
 }
 
 /* Pretty-prints the receiver */
-void production_print(production_t self, FILE *out)
+void
+production_print(production_t self, FILE *out)
 {
     production_print_with_offset(self, out, -1);
 }
 
 /* Pretty-prints the receiver with a `*' after the nth element */
-void production_print_with_offset(production_t self, FILE *out, int offset)
+void
+production_print_with_offset(production_t self, FILE *out, int offset)
 {
     int index;
 
     /* Print the left-hand-side */
-    component_print(self -> nonterminal, out);
+    component_print(self->nonterminal, out);
 
     /* Print the `derives' operator */
     fprintf(out, "::= ");
 
     /* Print the right-hand-side */
-    for (index = 0; index < self -> count; index++)
-    {
-	if (index == offset)
-	{
-	    fprintf(out, "* ");
-	}
+    for (index = 0; index < self->count; index++) {
+        if (index == offset) {
+            fprintf(out, "* ");
+        }
 
-	component_print(self -> components[index], out);
+        component_print(self->components[index], out);
     }
 
     /* Watch for a final `*' */
-    if (self -> count == offset)
-    {
-	fprintf(out, "* ");
+    if (self->count == offset) {
+        fprintf(out, "* ");
     }
 }
 
 /* Prints the production as a struct */
-void production_print_c_struct(production_t self, FILE *out)
+void
+production_print_c_struct(production_t self, FILE *out)
 {
     fprintf(out, "    { %s, %d, %d }",
-	    self -> reduction,
-	    component_get_index(self -> nonterminal),
-	    self -> count);
+            self->reduction,
+            component_get_index(self->nonterminal),
+            self->count);
 }
 
 /* Prints the production as a python tuple */
-void production_print_python_tuple(production_t self, char *module, FILE *out)
+void
+production_print_python_tuple(production_t self, char *module, FILE *out)
 {
-    if (module == NULL)
-    {
-	fprintf(out, "    (%s, %d, %d)",
-		self -> reduction,
-		component_get_index(self -> nonterminal),
-		self -> count);
-    }
-    else
-    {
-	fprintf(out, "    (%s.%s, %d, %d)",
-		module,
-		self -> reduction,
-		component_get_index(self -> nonterminal),
-		self -> count);
+    if (module == NULL) {
+        fprintf(out, "    (%s, %d, %d)",
+                self->reduction,
+                component_get_index(self->nonterminal),
+                self->count);
+    } else {
+        fprintf(out, "    (%s.%s, %d, %d)",
+                module,
+                self->reduction,
+                component_get_index(self->nonterminal),
+                self->count);
     }
 }
