@@ -1,3 +1,4 @@
+/* -*- mode: c; c-file-style: "elvin" -*- */
 /***********************************************************************
 
   Copyright (C) 1999-2006 by Mantara Software (ABN 17 105 665 594).
@@ -71,25 +72,18 @@ static struct option long_options[] =
 static void print_tables(grammar_t grammar, FILE *out)
 {
     /* Write the parse table to the file */
-    switch (format)
-    {
-	case FORMAT_C:
-	{
-	    grammar_print_c_tables(grammar, out);
-	    break;
-	}
+    switch (format) {
+    case FORMAT_C:
+        grammar_print_c_tables(grammar, out);
+        break;
 
-	case FORMAT_PYTHON:
-	{
-	    grammar_print_python_tables(grammar, module, out);
-	    break;
-	}
+    case FORMAT_PYTHON:
+        grammar_print_python_tables(grammar, module, out);
+        break;
 
-	default:
-	{
-	    /* Should never get here */
-	    fprintf(stderr, "*** Unrecognized format %d\n", format);
-	}
+    default:
+        /* Should never get here */
+        fprintf(stderr, "*** Unrecognized format %d\n", format);
     }
 }
 
@@ -99,17 +93,14 @@ static void parser_cb(void *ignored, grammar_t grammar)
     FILE *file;
 
     /* Print the kernels if debug is on */
-    if (debug)
-    {
+    if (debug) {
 	grammar_print_kernels(grammar, stderr);
     }
 
     /* If an output filename was specified then write to it */
-    if (output_filename != NULL)
-    {
+    if (output_filename != NULL) {
 	/* Try to open the output file */
-	if ((file = fopen(output_filename, "w")) == NULL)
-	{
+	if ((file = fopen(output_filename, "w")) == NULL) {
 	    perror("unable to open file for write");
 	    exit(1);
 	}
@@ -145,125 +136,98 @@ int main(int argc, char *argv[])
     int fd;
 
     /* Read options from the command line */
-    while ((choice = getopt_long(argc, argv, "o:cp?dqvh", long_options, NULL)) > 0)
-    {
-	switch (choice)
-	{
-	    /* --output or -o */
-	    case 'o':
-	    {
-		output_filename = optarg;
-		break;
-	    }
+    while ((choice = getopt_long(argc, argv, "o:cp?dqvh",
+                                 long_options, NULL)) != -1) {
+	switch (choice) {
+        case 'o':
+            /* --output or -o */
+            output_filename = optarg;
+            break;
 
-	    /* --c or -c */
-	    case 'c':
-	    {
-		format = FORMAT_C;
-		break;
-	    }
+        case 'c':
+            /* --c or -c */
+            format = FORMAT_C;
+            break;
 
+        case 'p':
 	    /* --python or -p */
-	    case 'p':
-	    {
-		format = FORMAT_PYTHON;
-		module = optarg;
-		break;
-	    }
+            format = FORMAT_PYTHON;
+            module = optarg;
+            break;
 
+        case 'd':
 	    /* --debug or -d */
-	    case 'd':
-	    {
-		debug = 1;
-		break;
-	    }
+            debug = 1;
+            break;
 
+        case 'q':
 	    /* --quiet or -q */
-	    case 'q':
-	    {
-		close(STDERR_FILENO);
-		break;
-	    }
+            close(STDERR_FILENO);
+            break;
 
+        case 'v':
 	    /* --version or -v */
-	    case 'v':
-	    {
-		printf("%s version %s\n", PACKAGE, VERSION);
-		exit(0);
-	    }
+            printf("%s version %s\n", PACKAGE, VERSION);
+            exit(0);
 
+        case 'h':
 	    /* --help or -h */
-	    case 'h':
-	    {
-		usage(argc, argv);
-		exit(0);
-	    }
+            usage(argc, argv);
+            exit(0);
 
-	    /* bogus option */
-	    default:
-	    {
-		usage(argc, argv);
-		exit(1);
-	    }
+        default:
+            /* bogus option */
+            usage(argc, argv);
+            exit(1);
 	}
     }
 
     /* Look for an input file name */
-    if (optind < argc)
-    {
+    if (optind < argc) {
 	input_filename = argv[optind++];
     }
 
     /* Make sure we don't have any extra args */
-    if (optind < argc)
-    {
+    if (optind < argc) {
 	usage(argc, argv);
 	exit(1);
     }
     
     /* Create the parser */
-    if ((parser = parser_alloc(parser_cb, NULL)) == NULL)
-    {
+    if ((parser = parser_alloc(parser_cb, NULL)) == NULL) {
 	perror("parser_alloc(): failed");
 	exit(1);
     }
 
     /* Open up the input file */
-    if (input_filename != NULL)
-    {
+    if (input_filename != NULL) {
 	if ((fd = open(input_filename, O_RDONLY)) < 0)
 	{
 	    perror("unable to open file for read");
 	    exit(1);
 	}
-    }
-    else
-    {
+    } else {
 	fd = STDIN_FILENO;
     }
 
     /* Read characters from stdin and give them to the Lexer */
-    while (1)
-    {
+    while (1) {
 	unsigned char buffer[BUFFER_SIZE];
 	ssize_t length;
 
-	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0)
-	{
+	if ((length = read(fd, buffer, BUFFER_SIZE)) < 0) {
 	    perror("read(): failed");
 	    abort();
 	}
 
 	/* Parse what we've read so far */
-	if (parser_parse(parser, input_filename, buffer, length) < 0)
-	{
+	if (parser_parse(parser, input_filename, buffer, length) < 0) {
 	    close(fd);
 	    exit(1);
 	}
 
 	/* Watch for EOF */
-	if (length == 0)
-	{
+	if (length == 0) {
 	    close(fd);
 	    exit(0);
 	}
