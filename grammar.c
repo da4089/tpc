@@ -38,10 +38,12 @@
 ***********************************************************************/
 
 #ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.30 2006/10/17 14:49:10 phelps Exp $";
+static const char cvsid[] = "$Id: grammar.c,v 1.31 2006/10/17 15:24:04 phelps Exp $";
 #endif /* lint */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
