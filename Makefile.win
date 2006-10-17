@@ -1,0 +1,39 @@
+# -*- makefile -*-
+
+TARGETS = tpc.exe
+
+CC = cl
+LN = link
+RM = del
+
+TPC_OBJS = \
+	component.obj \
+	production.obj \
+	grammar.obj \
+	parser.obj \
+	getopt.obj \
+	getopt1.obj \
+	main.obj
+
+DEFINES = \
+	/DWIN32=1 \
+	/D_POSIX_=1 \
+	/D_CRT_SECURE_NO_DEPRECATE=1 \
+	/DPACKAGE=\"tpc\" \
+	/DVERSION=\"0.6.3\"
+
+INCLUDES = /I.
+
+CFLAGS = /nologo $(DEFINES) $(INCLUDES)
+
+all: $(TARGETS)
+
+tpc.exe: $(TPC_OBJS)
+	$(LN) $(TPC_OBJS) /OUT:$@
+
+clean:
+	$(RM) $(TPC_OBJS)
+	$(RM) $(TARGETS)
+
+
+all: $(TARGETS)
