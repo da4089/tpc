@@ -77,6 +77,10 @@
 #if HAVE_STRING_H - 0
 #include <string.h>
 #endif
+#else
+#if HAVE_STRING_H
+#include <string.h>
+#endif
 #endif
 
 #if defined (WIN32) && !defined (__CYGWIN32__)
@@ -645,18 +649,19 @@ _getopt_internal (argc, argv, optstring, longopts, longind, long_only)
 		optarg = nameend + 1;
 	      else
 		{
-		  if (opterr)
-		   if (argv[optind - 1][1] == '-')
+          if (opterr) {
+           if (argv[optind - 1][1] == '-') {
 		    /* --option */
 		    fprintf (stderr,
 		     _("%s: option `--%s' doesn't allow an argument\n"),
 		     argv[0], pfound->name);
-		   else
+		   } else {
 		    /* +option or -option */
 		    fprintf (stderr,
 		     _("%s: option `%c%s' doesn't allow an argument\n"),
 		     argv[0], argv[optind - 1][0], pfound->name);
-
+           }
+          }
 		  nextchar += strlen (nextchar);
 
 		  optopt = pfound->val;
