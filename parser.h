@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -52,9 +52,12 @@ enum format
     /* Generate C tables */
     FORMAT_C,
 
+    /* Generate Golang tables */
+    FORMAT_GOLANG,
+
     /* Generate Python tables */
     FORMAT_PYTHON
-}; 
+};
 
 typedef enum format format_t;
 

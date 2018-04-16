@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -77,5 +77,8 @@ void grammar_print_c_tables(grammar_t self, FILE *out);
 
 /* Print out the parse tables in python format */
 void grammar_print_python_tables(grammar_t self, char *module, FILE *out);
+
+/* Print out the parse tables in Golang format */
+void grammar_print_golang_tables(grammar_t self, char *module, FILE *out);
 
 #endif /* GRAMMAR_H */

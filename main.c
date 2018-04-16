@@ -20,7 +20,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -65,6 +65,7 @@ static struct option long_options[] =
 {
     { "output", required_argument, NULL, 'o' },
     { "c", no_argument, NULL, 'c' },
+    { "go", no_argument, NULL, 'g' },
     { "python", optional_argument, NULL, 'p' },
     { "debug", no_argument, NULL, 'd' },
     { "version", no_argument, NULL, 'v' },
@@ -79,6 +80,10 @@ static void print_tables(grammar_t grammar, FILE *out)
     switch (format) {
     case FORMAT_C:
         grammar_print_c_tables(grammar, out);
+        break;
+
+    case FORMAT_GOLANG:
+        grammar_print_golang_tables(grammar, module, out);
         break;
 
     case FORMAT_PYTHON:
@@ -124,6 +129,7 @@ static void usage(int argc, char *argv[])
     fprintf(stderr, "usage: %s [OPTION]... [FILE]\n", argv[0]);
     fprintf(stderr, "  -o file,     --output=file\n");
     fprintf(stderr, "  -c,          --c\n");
+    fprintf(stderr, "  -g           --go\n");
     fprintf(stderr, "  -p,          --python[=import-module]\n");
     fprintf(stderr, "  -d,          --debug\n");
     fprintf(stderr, "  -q,          --quiet\n");
@@ -140,7 +146,7 @@ int main(int argc, char *argv[])
     int fd;
 
     /* Read options from the command line */
-    while ((choice = getopt_long(argc, argv, "o:cp?dqvh",
+    while ((choice = getopt_long(argc, argv, "o:cgp?dqvh",
                                  long_options, NULL)) != -1) {
         switch (choice) {
         case 'o':
@@ -151,6 +157,11 @@ int main(int argc, char *argv[])
         case 'c':
             /* --c or -c */
             format = FORMAT_C;
+            break;
+
+        case 'g':
+            /* --go or -g */
+            format = FORMAT_GOLANG;
             break;
 
         case 'p':
@@ -196,7 +207,7 @@ int main(int argc, char *argv[])
         usage(argc, argv);
         exit(1);
     }
-    
+
     /* Create the parser */
     if ((parser = parser_alloc(parser_cb, NULL)) == NULL) {
         perror("parser_alloc(): failed");
