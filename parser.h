@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -39,10 +39,6 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.6 2006/06/29 10:22:00 phelps Exp $";
-#endif /* lint */
-
 /* The parser type */
 typedef struct parser *parser_t;
 
@@ -54,7 +50,7 @@ enum format
 
     /* Generate Python tables */
     FORMAT_PYTHON
-}; 
+};
 
 typedef enum format format_t;
 

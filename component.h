@@ -19,7 +19,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -38,10 +38,6 @@
 
 #ifndef COMPONENT_H
 #define COMPONENT_H
-
-#ifndef lint
-static const char cvs_COMPONENT_H[] = "$Id: component.h,v 1.9 2006/06/29 10:22:00 phelps Exp $";
-#endif /* lint */
 
 /* The component type */
 typedef struct component *component_t;
