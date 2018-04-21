@@ -20,7 +20,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -36,10 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] = "$Id: parser.c,v 1.16 2006/10/17 15:24:04 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -457,7 +453,7 @@ lex_start(parser_t self, int ch)
         if (append_char(self, ch) < 0) {
             return -1;
         }
-        
+
         self->lex_state = lex_colon;
         return 0;
 
@@ -574,7 +570,7 @@ lex_id(parser_t self, int ch)
     return lex_start(self, ch);
 }
 
-/* We've encountered a bogus token.  Continue reading it until we have 
+/* We've encountered a bogus token.  Continue reading it until we have
  * a complete token to play with before complaining */
 static int
 lex_error(parser_t self, int ch)
@@ -931,4 +927,3 @@ parser_parse(parser_t self, char *filename,
     self->filename = NULL;
     return 0;
 }
-
