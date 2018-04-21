@@ -46,7 +46,11 @@
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
 #include <fcntl.h>
+#include <ctype.h>
 #include "component.h"
 #include "production.h"
 #include "grammar.h"
@@ -65,7 +69,8 @@ static struct option long_options[] =
 {
     { "output", required_argument, NULL, 'o' },
     { "c", no_argument, NULL, 'c' },
-    { "go", no_argument, NULL, 'g' },
+    { "language", required_argument, NULL, 'l' },
+    { "module", required_argument, NULL, 'm' },
     { "python", optional_argument, NULL, 'p' },
     { "debug", no_argument, NULL, 'd' },
     { "version", no_argument, NULL, 'v' },
@@ -128,9 +133,10 @@ static void usage(int argc, char *argv[])
 {
     fprintf(stderr, "usage: %s [OPTION]... [FILE]\n", argv[0]);
     fprintf(stderr, "  -o file,     --output=file\n");
-    fprintf(stderr, "  -c,          --c\n");
-    fprintf(stderr, "  -g           --go\n");
-    fprintf(stderr, "  -p,          --python[=import-module]\n");
+    fprintf(stderr, "  -c,          --c (same as -l c)\n");
+    fprintf(stderr, "  -l lang      --language=<lang>  One of: c/go/python\n");
+    fprintf(stderr, "  -m module    --module=module (Python only)\n");
+    fprintf(stderr, "  -p,          --python[=import-module] (same as -l python -m import-module)\n");
     fprintf(stderr, "  -d,          --debug\n");
     fprintf(stderr, "  -q,          --quiet\n");
     fprintf(stderr, "  -v,          --version\n");
@@ -142,11 +148,12 @@ static void usage(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     parser_t parser;
+    char *lower = NULL;
     int choice;
     int fd;
 
     /* Read options from the command line */
-    while ((choice = getopt_long(argc, argv, "o:cgp?dqvh",
+    while ((choice = getopt_long(argc, argv, "o:cl:m:p?dqvh",
                                  long_options, NULL)) != -1) {
         switch (choice) {
         case 'o':
@@ -159,9 +166,28 @@ int main(int argc, char *argv[])
             format = FORMAT_C;
             break;
 
-        case 'g':
-            /* --go or -g */
-            format = FORMAT_GOLANG;
+        case 'l':
+            /* --language or -l */
+            lower = strdup(optarg);
+            for (int i = 0; i < strlen(lower); i++) {
+                lower[i] = tolower(lower[i]);
+            }
+            if (strcmp(lower, "c") == 0) {
+                format = FORMAT_C;
+            } else if (strcmp(lower, "go") == 0 ||
+                       strcmp(lower, "golang") == 0) {
+                format = FORMAT_GOLANG;
+            } else if (strcmp(lower, "python") == 0) {
+                format = FORMAT_PYTHON;
+            } else {
+                fprintf(stderr, "Unknown language: %s\n", optarg);
+                usage(argc, argv);
+                exit(1);
+            }
+            break;
+
+        case 'm':
+            module = optarg;
             break;
 
         case 'p':
@@ -206,6 +232,14 @@ int main(int argc, char *argv[])
     if (optind < argc) {
         usage(argc, argv);
         exit(1);
+    }
+
+    /* Check module only for Python */
+    if (module) {
+        if (format != FORMAT_PYTHON) {
+            fprintf(stderr, "Module parameter only valid for Python\n");
+            exit(1);
+        }
     }
 
     /* Create the parser */
