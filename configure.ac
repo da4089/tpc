@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(grammar.c)
-AM_INIT_AUTOMAKE(tpc, 0.6.3)
+AC_INIT([tpc], [0.6.3])
+AC_CONFIG_SRCDIR([grammar.c])
+AM_INIT_AUTOMAKE
 
 dnl Checks for programs.
 AC_PROG_AWK

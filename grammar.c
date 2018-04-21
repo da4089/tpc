@@ -20,7 +20,7 @@
    * Neither the name of the Mantara Software nor the names
      of its contributors may be used to endorse or promote
      products derived from this software without specific prior
-     written permission. 
+     written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -36,10 +36,6 @@
    POSSIBILITY OF SUCH DAMAGE.
 
 ***********************************************************************/
-
-#ifndef lint
-static const char cvsid[] = "$Id: grammar.c,v 1.31 2006/10/17 15:24:04 phelps Exp $";
-#endif /* lint */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -655,7 +651,7 @@ propagate_derived(grammar_t self,
         }
     }
 
-    return 0;    
+    return 0;
 }
 
 /* Compute the propagates table contribution of a given kernel production */
@@ -703,7 +699,7 @@ compute_propagates_for_production_and_offset(grammar_t self,
         if (table[ti + pi * self->terminal_count]) {
             return 0;
         }
-	
+
         /* Mark this production */
         table[ti + pi * self->terminal_count] = 1;
 
@@ -930,7 +926,7 @@ grammar_alloc(int production_count, production_t *productions,
     self->kernels = NULL;
 
     /* Compute the productions_by_nonterminal */
-    if ((self->productions_by_nonterminal = 
+    if ((self->productions_by_nonterminal =
          compute_productions_by_nonterminal(
              nonterminal_count,
              production_count,
@@ -1220,7 +1216,7 @@ print_kernel_SR_entry(grammar_t self,
 
         /* Print a comma separator */
         if (index != 0) {
-            fprintf(out, separator);
+            fprintf(out, "%s", separator);
         }
 
         /* See if there's a shift action for this terminal */
@@ -1264,7 +1260,7 @@ print_kernel_SR_entry(grammar_t self,
     }
 
     /* Close this table entry */
-    fprintf(out, rparen);
+    fprintf(out, "%s", rparen);
 
     /* Clean up */
     free(reductions);

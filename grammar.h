@@ -39,10 +39,6 @@
 #ifndef GRAMMAR_H
 #define GRAMMAR_H
 
-#ifndef lint
-static const char cvs_GRAMMAR_H[] = "$Id: grammar.h,v 1.16 2006/06/29 10:22:00 phelps Exp $";
-#endif /* lint */
-
 /* The grammar type */
 typedef struct grammar *grammar_t;
 

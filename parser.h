@@ -39,10 +39,6 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#ifndef lint
-static const char cvs_PARSER_H[] = "$Id: parser.h,v 1.6 2006/06/29 10:22:00 phelps Exp $";
-#endif /* lint */
-
 /* The parser type */
 typedef struct parser *parser_t;
 
