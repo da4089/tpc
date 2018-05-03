@@ -1566,8 +1566,8 @@ print_golang_shift_reduce_table(grammar_t self, FILE *out)
 
     /* Print out some functions which help generate tables */
     fprintf(out,
-            "const ERR int = -1\n"
-            "const ACC int = 0\n\n"
+            "const ERR = -1\n"
+            "const ACC = 0\n\n"
             "func R(x int) int {\n"
             "    return x\n"
             "}\n"
@@ -1576,7 +1576,7 @@ print_golang_shift_reduce_table(grammar_t self, FILE *out)
             "}\n",
             self->production_count);
 
-    fprintf(out, "var strTable [][]int = {\n");
+    fprintf(out, "var strTable = [][]int {\n");
 
     /* Go through each kernel and print out its part of the SR table */
     for (index = 0; index < self->kernel_count; index++) {
@@ -1584,7 +1584,7 @@ print_golang_shift_reduce_table(grammar_t self, FILE *out)
             fprintf(out, ",\n");
         }
 
-        print_kernel_SR_entry(self, index, "(", ")", ", ", out);
+        print_kernel_SR_entry(self, index, "{", "}", ", ", out);
     }
 
     fprintf(out, "}\n\n");
@@ -1597,7 +1597,7 @@ print_golang_goto_table(grammar_t self, FILE *out)
     int index;
 
     /* Print the goto table */
-    fprintf(out, "var GotoTable [][]int = {\n");
+    fprintf(out, "var GotoTable = [][]int {\n");
 
     /* Go through each kernel and print its portion of the goto table */
     for (index = 0; index < self->kernel_count; index++) {
