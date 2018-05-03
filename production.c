@@ -142,7 +142,6 @@ production_print_with_offset(production_t self, FILE *out, int offset)
 
     /* Print the `derives' operator */
     fprintf(out, "::= ");
-
     /* Print the right-hand-side */
     for (index = 0; index < self->count; index++) {
         if (index == offset) {
@@ -184,4 +183,19 @@ production_print_python_tuple(production_t self, char *module, FILE *out)
                 component_get_index(self->nonterminal),
                 self->count);
     }
+}
+
+/* Prints the production as a Go struct initialiser */
+void
+production_print_golang_init(production_t self, FILE *out)
+{
+    fprintf(out,
+            "    {\n"
+            "        reduction: \"%s\",\n"
+            "        nonTerminalType: %d,\n"
+            "        count: %d,\n"
+            "    }",
+            self->reduction,
+            component_get_index(self->nonterminal),
+            self->count);
 }

@@ -64,6 +64,9 @@ void component_print_c_enum(component_t self, FILE *out);
 /* Prints the receiver as a python assignment */
 void component_print_python_assign(component_t self, FILE *out);
 
+/* Printe the receiver as a Go enum entry */
+void component_print_go_enum(component_t self, FILE *out);
+
 /* Returns the receiver's name */
 char *component_get_name(component_t self);
 

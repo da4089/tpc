@@ -75,4 +75,7 @@ void production_print_c_struct(production_t self, FILE *out);
 /* Prints the production as a python tuple */
 void production_print_python_tuple(production_t self, char *module, FILE *out);
 
+/* Prints the production as a Go struct initialiser */
+void production_print_golang_init(production_t self, FILE *out);
+
 #endif /* PRODUCTION_H */

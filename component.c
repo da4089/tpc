@@ -130,6 +130,18 @@ component_print_c_enum(component_t self, FILE *out)
     }
 }
 
+/* Prints the receiver as a Go constant */
+void
+component_print_go_enum(component_t self, FILE *out)
+{
+    if (self->index == 0) {
+        fprintf(out, "    TerminalEOF = iota\n");
+    } else {
+        fprintf(out, "    Terminal%s\n", self->name);
+    }
+}
+
+
 /* Prints the receiver as a python assignment statement */
 void
 component_print_python_assign(component_t self, FILE *out)

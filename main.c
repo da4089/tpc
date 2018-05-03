@@ -234,10 +234,10 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    /* Check module only for Python */
+    /* Check module */
     if (module) {
-        if (format != FORMAT_PYTHON) {
-            fprintf(stderr, "Module parameter only valid for Python\n");
+        if (format == FORMAT_C) {
+            fprintf(stderr, "Module parameter not valid for C\n");
             exit(1);
         }
     }
